@@ -107,9 +107,30 @@ let archiveLikeExts: Set<String> = [
     "epub", "dmg", "pkg", "deb", "rpm"
 ]
 
+/// 一眼就知道解压不了的格式 —— 双击直接交给系统，不浪费一次解析
+let nonArchiveExts: Set<String> = [
+    // 图片
+    "png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "bmp", "tiff", "tif",
+    "svg", "ico", "icns", "raw", "psd", "ai",
+    // 音视频
+    "mp4", "mov", "m4v", "avi", "mkv", "flv", "wmv", "webm",
+    "mp3", "m4a", "aac", "wav", "aiff", "flac", "ogg",
+    // 文档与文本
+    "pdf", "txt", "md", "rtf", "html", "htm", "css", "js", "mjs",
+    "json", "xml", "yaml", "yml", "toml", "ini", "conf", "log",
+    "csv", "tsv", "doc", "xls", "ppt",
+    // 字体
+    "ttf", "otf", "woff", "woff2",
+    // 证书 / 密钥
+    "pem", "crt", "cer", "key", "p12", "pfx",
+    // 其它
+    "sh", "command", "bat", "ps1", "py", "rb", "swift", "c", "h", "cpp", "rs", "go", "java"
+]
+
 func canTryAsArchive(_ url: URL) -> Bool {
     let e = url.pathExtension.lowercased()
-    return isArchive(url) || archiveLikeExts.contains(e)
+    if nonArchiveExts.contains(e) { return false }
+    return true
 }
 
 // MARK: - 图标缓存
@@ -619,6 +640,13 @@ final class ZipModel: ObservableObject {
         // .app / .framework 这类包磁盘上是目录，但语义是「一个整体」，
         // 双击应该在右边展开看内部，而不是钻进去
         if e.isDir && !e.isBundle { loadFS(e.url); return }
+
+        // 明显不是归档的（图片/音视频/文本…）直接交回系统
+        guard canTryAsArchive(e.url) else {
+            NSWorkspace.shared.open(e.url)
+            status = "已用系统程序打开 \(e.name)"
+            return
+        }
 
         open(e.url)
     }
