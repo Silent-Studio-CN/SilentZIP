@@ -1,0 +1,10 @@
+# 构建产物
+SilentZIP.app/
+*.dSYM/
+
+# macOS
+.DS_Store
+
+# 日志 / 临时
+*.log
+*.ppm
