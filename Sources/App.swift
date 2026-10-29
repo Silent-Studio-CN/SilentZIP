@@ -81,6 +81,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    /// 退出时把临时解压目录整个删掉 —— 不给用户留垃圾
+    func applicationWillTerminate(_ notification: Notification) {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SilentZIP-Open", isDirectory: true)
+        try? FileManager.default.removeItem(at: root)
+    }
 }
 
 // MARK: - 支持的归档后缀
@@ -659,6 +666,59 @@ final class ZipModel: ObservableObject {
         }
     }
 
+    // MARK: 归档内部操作
+
+    /// 右栏双击：
+    /// - 目录 → 进入
+    /// - 归档类文件（jar/docx/zip…）→ 临时解压后作为嵌套归档展开
+    /// - 其它文件 → 临时解压并用系统程序打开
+    func enterEntry(_ e: ArchiveEntry) {
+        if e.isDirectory { currentPath = e.path; return }
+        guard let a = archive else { return }
+
+        busy = true
+        status = "展开 \(e.name)…"
+        Task.detached(priority: .userInitiated) {
+            do {
+                let f = try ArchiveBackend.shared.extractEntry(a, path: e.path)
+                let list = try ArchiveBackend.shared.list(f)
+                await MainActor.run {
+                    self.busy = false
+                    self.status = "嵌套：\(e.name)（\(list.count) 个条目）"
+                    self.archive = f
+                    self.entries = list
+                    self.currentPath = ""
+                    self.selection = []
+                }
+            } catch {
+                await MainActor.run {
+                    self.busy = false
+                    self.openEntry(e)
+                }
+            }
+        }
+    }
+
+    /// 临时解压到临时目录，交给系统默认程序打开。
+    /// 临时目录在 app 退出时整体删除。
+    func openEntry(_ e: ArchiveEntry) {
+        guard let a = archive else { return }
+        status = "正在打开 \(e.name)…"
+        Task.detached(priority: .userInitiated) {
+            do {
+                let f = try ArchiveBackend.shared.extractEntry(a, path: e.path)
+                await MainActor.run {
+                    NSWorkspace.shared.open(f)
+                    self.status = "已打开 \(e.name)"
+                }
+            } catch {
+                await MainActor.run {
+                    self.status = "打开失败：" + error.localizedDescription
+                }
+            }
+        }
+    }
+
     func extract(to dir: URL) {
         guard let a = archive else { return }
         var subset = entries.filter { selection.contains($0.id) && !$0.isDirectory }.map { $0.path }
@@ -1085,10 +1145,11 @@ struct ContentView: View {
                         Text(e.name)
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture(count: 2) {
-                        if e.isDirectory { model.currentPath = e.path }
-                    }
+                    .onTapGesture(count: 2) { model.enterEntry(e) }
                     .contextMenu {
+                        Button("打开") { model.openEntry(e) }
+                        Button("展开嵌套归档") { model.enterEntry(e) }
+                        Divider()
                         Button("解压选中项") { showExtract = true }
                         Divider()
                         Button("复制到…") { askMoveCopy(copy: true) }

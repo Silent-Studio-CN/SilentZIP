@@ -183,6 +183,40 @@ final class ArchiveBackend: @unchecked Sendable {
         return TestResult(summary: summary, detail: detail)
     }
 
+    // MARK: - 临时解压单个条目
+
+    /// 把归档里的一个条目解到临时目录，返回落地文件的 URL。
+    /// 用途：双击嵌套归档继续展开；右键「打开」交给系统程序。
+    func extractEntry(_ archive: URL, path: String) throws -> URL {
+        guard let tool = toolPath else { throw ArchiveError.toolMissing }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SilentZIP-Open", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        try extract(archive, to: root, subset: [path])
+
+        let out = root.appendingPathComponent(path)
+        guard FileManager.default.fileExists(atPath: out.path) else {
+            // 有的归档会把条目放在子目录里，兜底找一下同名文件
+            if let hit = Self.findFile(named: (path as NSString).lastPathComponent, under: root) {
+                _ = tool
+                return hit
+            }
+            throw ArchiveError.failed("解压后找不到 \(path)")
+        }
+        return out
+    }
+
+    static func findFile(named name: String, under root: URL) -> URL? {
+        guard let en = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else { return nil }
+        for case let u as URL in en where u.lastPathComponent == name {
+            return u
+        }
+        return nil
+    }
+
     // MARK: - 归档内重命名/移动
 
     func rename(_ archive: URL, from: String, to: String) throws {
