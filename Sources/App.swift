@@ -35,6 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate(ignoringOtherApps: true)
+        // 让系统重新扫描本 app 的 NSServices —— 否则右键菜单里看不到，
+        // 用户还得手动去「系统设置 → 键盘 → 服务」勾选
+        NSUpdateDynamicServices()
     }
 
     // MARK: - Finder 右键「快速操作」/「服务」
