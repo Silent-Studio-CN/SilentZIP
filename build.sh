@@ -110,6 +110,10 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
       <dict><key>default</key><string>用 SilentZIP 打开</string></dict>
       <key>NSMessage</key><string>openArchive</string>
       <key>NSPortName</key><string>SilentZIP</string>
+      <key>NSRequiredContext</key>
+      <dict>
+        <key>NSApplicationIdentifier</key><string>com.apple.finder</string>
+      </dict>
       <key>NSSendFileTypes</key>
       <array>
         <string>public.data</string>
@@ -128,6 +132,10 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
       <dict><key>default</key><string>解压到此处（SilentZIP）</string></dict>
       <key>NSMessage</key><string>extractHere</string>
       <key>NSPortName</key><string>SilentZIP</string>
+      <key>NSRequiredContext</key>
+      <dict>
+        <key>NSApplicationIdentifier</key><string>com.apple.finder</string>
+      </dict>
       <key>NSSendFileTypes</key>
       <array>
         <string>public.data</string>

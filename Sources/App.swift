@@ -46,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func openArchive(_ pboard: NSPasteboard,
                            userData: String,
                            error: AutoreleasingUnsafeMutablePointer<NSString>) {
+        let log = "openArchive fired, types=" + String(describing: pboard.types)
+        try? log.write(toFile: "/tmp/silentzip-service.log",
+                       atomically: true, encoding: .utf8)
         guard let urls = pboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
               let first = urls.first else { return }
         Task { @MainActor in
@@ -1118,9 +1121,6 @@ struct ContentView: View {
                             Button("作为归档查看") {
                                 model.open(e.url, fallbackToSystem: false)
                             }
-                        }
-                        if e.isDir {
-                            Button("在 SilentZIP 中浏览") { model.loadFS(e.url) }
                         }
                         Divider()
                         Button("压缩为 7z…") { askCreate(items: [e.url], ext: "7z") }
