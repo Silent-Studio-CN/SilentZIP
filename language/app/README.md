@@ -5,6 +5,7 @@
 | 语言 | 文件 | 状态 |
 |---|---|---|
 | 简体中文 | [zh-Hans.ini](zh-Hans.ini) | 完整，基准版本 |
+| 繁體中文 | [zh-Hant.ini](zh-Hant.ini) | 完整（台灣用語） |
 | English | [en.ini](en.ini) | 待翻译 |
 | 日本語 | [ja.ini](ja.ini) | 待翻译 |
 | 한국어 | [ko.ini](ko.ini) | 待翻译 |
