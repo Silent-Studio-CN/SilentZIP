@@ -104,7 +104,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 // MARK: - 支持的归档后缀
-let archiveExts: Set<String> = ["7z","zip","rar","tar","gz","tgz","bz2","tbz","xz","txz","zst","iso","cab","lzh","arj","cpio","lzma"]
+/// 7-Zip 26.01 能解析的全部扩展名（取自 7zz i 的 Formats 表）
+let archiveExts: Set<String> = [
+    // 原生压缩
+    "7z", "zip", "z01", "rar", "r00", "tar", "ova",
+    "gz", "gzip", "tgz", "tpz", "bz2", "bzip2", "tbz", "tbz2",
+    "xz", "txz", "z", "taz", "lzma", "lzma86", "zst", "tzst",
+    // 安装包 / 打包
+    "iso", "cab", "arj", "lzh", "lha", "cpio", "ar", "a", "lib",
+    "deb", "udeb", "rpm", "msi", "msp", "msm", "pkg", "xip", "xar",
+    "wim", "swm", "esd", "ppkg", "dmg", "apk",
+    // 旧版 Office（Compound 文档，7z 能解出内部流）
+    "doc", "xls", "ppt", "msm",
+    // 帮助文档
+    "chm", "chi", "chq", "chw", "hxs", "hxi", "hxr", "hxq", "hxw", "lit",
+    // 磁盘镜像
+    "img", "ext", "ext2", "ext3", "ext4", "apfs", "fat",
+    "hfs", "hfsx", "cramfs", "squashfs", "udf",
+    "vhd", "vhdx", "vmdk", "vdi", "avhdx",
+    // 可执行 / 目标文件
+    "elf", "macho", "uefif", "scap", "obj", "ihex", "te",
+    // 其它容器
+    "swf", "flv", "b64", "001", "simg", "lpimg", "gpt", "mbr", "apm"
+]
 
 func isArchive(_ url: URL) -> Bool {
     archiveExts.contains(url.pathExtension.lowercased())
@@ -131,7 +153,7 @@ let nonArchiveExts: Set<String> = [
     // 文档与文本
     "pdf", "txt", "md", "rtf", "html", "htm", "css", "js", "mjs",
     "json", "xml", "yaml", "yml", "toml", "ini", "conf", "log",
-    "csv", "tsv", "doc", "xls", "ppt",
+    "csv", "tsv",
     // 字体
     "ttf", "otf", "woff", "woff2",
     // 证书 / 密钥
@@ -364,18 +386,27 @@ struct AboutView: View {
 // MARK: - 完整条款（单独一页，内部滚动）
 struct FullTermsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var tab: Int = 0
 
-    /// 直接读 bundle 里的 LICENSE.md —— 单一来源，改文件即改全部
-    private var licenseText: String {
-        if let u = Bundle.main.url(forResource: "LICENSE", withExtension: "md"),
-           let s = try? String(contentsOf: u, encoding: .utf8) {
-            return s
+    private let files = [
+        ("SilentZIP 协议", "LICENSE"),
+        ("7-Zip 许可", "THIRD-PARTY-7zip"),
+        ("LGPL 2.1", "COPYING.LGPL-2.1")
+    ]
+
+    /// 直接读 bundle 里的原始文件 —— 一字不改地展示
+    private func text(for name: String) -> String {
+        for ext in ["md", "txt"] {
+            if let u = Bundle.main.url(forResource: name, withExtension: ext),
+               let s = try? String(contentsOf: u, encoding: .utf8) {
+                return s
+            }
         }
-        return "许可协议文件缺失"
+        return "许可文件缺失：" + name
     }
 
     private var lines: [(offset: Int, text: String)] {
-        licenseText.components(separatedBy: "\n")
+        text(for: files[tab].1).components(separatedBy: "\n")
             .enumerated()
             .map { (offset: $0.offset, text: $0.element) }
     }
@@ -388,7 +419,16 @@ struct FullTermsView: View {
                 Button("关闭") { dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
-            .padding(.horizontal, 20).padding(.vertical, 14)
+            .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 10)
+
+            Picker("", selection: $tab) {
+                ForEach(Array(files.enumerated()), id: \.offset) { idx, f in
+                    Text(f.0).tag(idx)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
 
             Divider()
 
@@ -402,12 +442,40 @@ struct FullTermsView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 18)
             }
+
+            Divider()
+
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal")
+                    .foregroundStyle(.secondary)
+                Text("第三方许可取自官方源，原样收录，未作修改")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 20).padding(.vertical, 8)
         }
-        .frame(width: 680, height: 680)
+        .frame(width: 720, height: 700)
     }
+
+    /// LICENSE.md 走 markdown 渲染；第三方原文一律原样输出，
+    /// 连行首缩进都不动 —— 许可文本不允许任何形式的改写
+    private var isMarkdown: Bool { files[tab].1 == "LICENSE" }
 
     @ViewBuilder
     private func lineView(_ raw: String) -> some View {
+        if !isMarkdown {
+            Text(raw.isEmpty ? " " : raw)
+                .font(.system(size: 11, design: .monospaced))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            markdownLine(raw)
+        }
+    }
+
+    @ViewBuilder
+    private func markdownLine(_ raw: String) -> some View {
         let t = raw.trimmingCharacters(in: .whitespaces)
 
         if t.isEmpty {
@@ -435,7 +503,6 @@ struct FullTermsView: View {
         }
     }
 
-    /// 行内 **粗体** / *斜体*
     private func inline(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s)) ?? AttributedString(s)
     }

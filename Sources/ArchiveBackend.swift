@@ -37,10 +37,24 @@ final class ArchiveBackend: @unchecked Sendable {
 
     /// 找出 7z / 7za / 7zz 可执行文件（构造时算一次，之后只读）
     let toolPath: String? = {
-        let candidates = ["/opt/homebrew/bin/7z", "/usr/local/bin/7z",
-                          "/opt/homebrew/bin/7zz", "/usr/local/bin/7zz",
-                          "/opt/homebrew/bin/7za", "/usr/local/bin/7za"]
-        for c in candidates where FileManager.default.isExecutableFile(atPath: c) { return c }
+        // 1) 内置引擎优先 —— 版本随 app 走，不受用户环境影向
+        //    7zz 是 7-Zip 官方 macOS 版本（universal binary）
+        if let bundled = Bundle.main.url(forResource: "7zz", withExtension: nil),
+           FileManager.default.isExecutableFile(atPath: bundled.path) {
+            return bundled.path
+        }
+        // 2) 退回系统安装的版本
+        let candidates = [
+            "/opt/homebrew/bin/7zz",
+            "/opt/homebrew/bin/7z",
+            "/usr/local/bin/7zz",
+            "/usr/local/bin/7z",
+            "/opt/homebrew/bin/7za",
+            "/usr/local/bin/7za"
+        ]
+        for c in candidates where FileManager.default.isExecutableFile(atPath: c) {
+            return c
+        }
         return nil
     }()
 
@@ -107,9 +121,13 @@ final class ArchiveBackend: @unchecked Sendable {
                 modified = String(line.dropFirst(11))
             } else if line.hasPrefix("CRC = ") {
                 crc = String(line.dropFirst(6))
+            } else if line.hasPrefix("Folder = ") {
+                // 7-Zip 21+ 用这个字段明确标记目录（+ 是目录，- 是文件）
+                dir = line.hasPrefix("Folder = +")
             } else if line.hasPrefix("Attributes = ") {
+                // 老版本兜底：Windows 风格的 D/AD 前缀
                 let a = line.dropFirst(13)
-                if a.contains("D") { dir = true }
+                if a.hasPrefix("D") || a.hasPrefix("AD") { dir = true }
             } else if line.trimmingCharacters(in: .whitespaces).isEmpty {
                 flush()
                 inEntry = false

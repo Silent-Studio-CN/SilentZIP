@@ -2,7 +2,7 @@
 
 **版本 1.0 ｜ 生效日期 2026 年 11 月 1 日**
 
-版权所有 (C) 2026 SilentStudio / SilentCodeTeams™
+版权所有 (C) SilentStudio / SilentCodeTeams™
 
 ---
 
@@ -74,20 +74,26 @@ SilentZIP 软件（以下称「本软件」）达成的法律协议。
 
 ## 四、第三方组件
 
-**4.1** 本软件通过独立子进程调用 7-Zip（可执行文件名 7z）完成
-压缩、解压与完整性校验。
+**4.1** 本软件通过独立子进程调用 7-Zip（可执行文件名 7z）完成压缩、
+解压与完整性校验。
 
-**4.2** 7-Zip 版权归 Igor Pavlov 所有，依 GNU LGPL 及附带的
-unRAR license restriction 发布。
+**4.2** 7-Zip 的版权归 Igor Pavlov 所有。其原始许可文本完整附于
+本软件包内的 **THIRD-PARTY-7zip.txt**，未作任何字句修改。
 
-**4.3** 本软件未静态链接 7-Zip 的代码，二者以进程边界隔离。
+**4.3** 7-Zip 主要依 GNU LGPL 发布。GNU LGPL 2.1 全文附于包内的
+**COPYING.LGPL-2.1.txt**。
 
-**4.4** 7-Zip 的许可条款独立于本协议。如本协议与 7-Zip 自身许可
+**4.4** 7-Zip 的部分代码附带 unRAR license restriction 及 BSD 3-clause、
+BSD 2-clause 许可，具体条款见 THIRD-PARTY-7zip.txt 原文。
+
+**4.5** 本软件未静态链接 7-Zip 的代码，二者以进程边界隔离。
+
+**4.6** 7-Zip 的许可条款独立于本协议。如本协议与 7-Zip 自身许可
 存在冲突，就 7-Zip 相关部分以 7-Zip 的许可为准。
 
-**4.5** 本软件不使用 7-Zip 的名称、标识或商标进行宣传或暗示关联。
+**4.7** 本软件不使用 7-Zip 的名称、标识或商标进行宣传或暗示关联。
 
-**4.6** 本软件可能包含其它遵循各自许可的组件，其声明随安装包提供。
+**4.8** 本软件可能包含其它遵循各自许可的组件，其声明随安装包提供。
 
 ---
 
@@ -210,7 +216,7 @@ unRAR license restriction 发布。
 
 **Version 1.0 ｜ Effective November 1, 2026**
 
-Copyright (C) 2026 SilentStudio / SilentCodeTeams™
+Copyright (C) SilentStudio / SilentCodeTeams™
 
 ---
 
@@ -297,20 +303,28 @@ right to process.
 **4.1** The Software invokes 7-Zip (executable name "7z") as a separate
 child process to perform compression, extraction, and integrity testing.
 
-**4.2** 7-Zip is Copyright (C) Igor Pavlov and is distributed under the
-GNU LGPL together with the unRAR license restriction.
+**4.2** 7-Zip is Copyright (C) Igor Pavlov. Its original license text is
+reproduced in full in **THIRD-PARTY-7zip.txt** accompanying this package,
+without any modification.
 
-**4.3** The Software does not statically link 7-Zip code; the two are
+**4.3** 7-Zip is distributed primarily under the GNU LGPL. The full text
+of GNU LGPL 2.1 is provided in **COPYING.LGPL-2.1.txt**.
+
+**4.4** Portions of 7-Zip carry the unRAR license restriction, the BSD
+3-clause License, and the BSD 2-clause License; the exact terms appear in
+THIRD-PARTY-7zip.txt.
+
+**4.5** The Software does not statically link 7-Zip code; the two are
 isolated by a process boundary.
 
-**4.4** 7-Zip's licensing terms are independent of this Agreement. In the
+**4.6** 7-Zip's licensing terms are independent of this Agreement. In the
 event of conflict, the terms of 7-Zip's own license govern the 7-Zip
 portion.
 
-**4.5** The Software does not use 7-Zip's name, logo, or trademarks for
+**4.7** The Software does not use 7-Zip's name, logo, or trademarks for
 promotion or to imply affiliation.
 
-**4.6** The Software may include other components under their respective
+**4.8** The Software may include other components under their respective
 licenses; such notices accompany the distribution.
 
 ---
@@ -458,3 +472,23 @@ version shall prevail.**
 *SilentZIP 是独立产品，与 7-Zip 官方无隶属关系。*
 *SilentZIP is an independent product and is not affiliated with the
 official 7-Zip project.*
+
+---
+
+## 随包分发的许可文件
+
+| 文件 | 内容 | 说明 |
+|---|---|---|
+| LICENSE.md | 本协议 | SilentZIP 自身条款，中英双语 |
+| THIRD-PARTY-7zip.txt | 7-Zip 原始许可 | 取自 7-zip.org，一字未改 |
+| COPYING.LGPL-2.1.txt | GNU LGPL 2.1 全文 | 取自 gnu.org，一字未改 |
+
+---
+
+## License Files Distributed With This Package
+
+| File | Contents | Note |
+|---|---|---|
+| LICENSE.md | This Agreement | SilentZIP terms, Chinese and English |
+| THIRD-PARTY-7zip.txt | 7-Zip original license | From 7-zip.org, unmodified |
+| COPYING.LGPL-2.1.txt | GNU LGPL 2.1 full text | From gnu.org, unmodified |

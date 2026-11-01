@@ -18,8 +18,15 @@ swiftc -swift-version 5 -O Sources/*.swift -o "$BIN" \
 if [ -f Resources/SilentZIP.icns ]; then
   cp Resources/SilentZIP.icns "$APP/Contents/Resources/SilentZIP.icns"
 fi
-if [ -f Resources/LICENSE.md ]; then
-  cp Resources/LICENSE.md "$APP/Contents/Resources/LICENSE.md"
+for f in LICENSE.md THIRD-PARTY-7zip.txt COPYING.LGPL-2.1.txt; do
+  [ -f "Resources/$f" ] && cp "Resources/$f" "$APP/Contents/Resources/$f"
+done
+
+# 内置 7-Zip 引擎（自行编译，LGPL）
+if [ -f Resources/7zz ]; then
+  cp Resources/7zz "$APP/Contents/Resources/7zz"
+  chmod +x "$APP/Contents/Resources/7zz"
+  codesign --force --sign - "$APP/Contents/Resources/7zz" 2>/dev/null || true
 fi
 
 echo "编译 Finder 扩展…"
