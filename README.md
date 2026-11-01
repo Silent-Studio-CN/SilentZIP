@@ -100,6 +100,66 @@ SilentZIP 自身采用私有许可协议，见 [LICENSE.md](Resources/LICENSE.md
 
 ---
 
+## 项目结构
+
+    SilentZIP/
+    ├── Sources/              Swift 源码
+    │   ├── App.swift           界面、模型、文件系统浏览
+    │   └── ArchiveBackend.swift  引擎调用与输出解析
+    ├── FinderExt/
+    │   └── FinderSync.swift   Finder 扩展（需 Developer ID 签名才能启用）
+    ├── Resources/
+    │   ├── 7zz                  7-Zip 引擎二进制（自编译）
+    │   ├── SilentZIP.icns       程序图标
+    │   ├── LICENSE.md           项目许可协议
+    │   ├── THIRD-PARTY-7zip.txt 7-Zip 原始许可（未修改）
+    │   └── COPYING.LGPL-2.1.txt LGPL 2.1 全文
+    ├── engine/               引擎构建（给其他开发者）
+    │   ├── build-7zip.sh        一条命令重新编译
+    │   ├── README.md            编译说明与版本策略
+    │   └── VERSION              当前引擎版本
+    ├── docs/
+    │   └── 安装包需求.md        分发方案与注册机制
+    └── build.sh              一键构建
+
+---
+
+## 引擎版本策略
+
+**持续跟进 7-Zip 的每个新版本。**
+
+当 7-Zip 发布新源码时，一条命令完成升级：
+
+    ./engine/build-7zip.sh
+
+脚本会自动探测官方最新的源码版本、下载、编译、替换 Resources/7zz。
+
+**判断依据是官方源码包的日期，不是 Windows 二进制版本号** —— 两者经常不同步。
+例如 26.05 只有 Windows 版，源码最新仍是 26.01。
+
+详细说明见 [engine/README.md](engine/README.md)。
+
+---
+
+## 已知限制
+
+| 项目 | 状态 |
+|---|---|
+| Intel Mac | 当前引擎为 arm64 原生；Intel 机器会回退到系统已装的 7z |
+| Finder 扩展 | 需 Developer ID 签名，ad-hoc 签名会被系统拒绝 |
+| 右键菜单一级显示 | macOS 13+ 的 NSServices 可能归入「服务 ▸」子菜单 |
+| 代码签名 | 目前 ad-hoc，首次打开会有「无法验证开发者」提示 |
+
+---
+
+## 相关文档
+
+- [安装包需求](docs/安装包需求.md) —— DMG 方案、自动注册机制、验证清单
+- [引擎说明](engine/README.md) —— 7-Zip 编译方法与版本策略
+- [许可协议](Resources/LICENSE.md) —— 中英双语完整条款
+
+---
+
 ## 声明
 
 SilentZIP 是独立产品，与 7-Zip 官方无隶属关系，不使用其名称或商标进行宣传。
