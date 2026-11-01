@@ -1,6 +1,6 @@
 # SilentZIP
 
-**中文** · [English](language/readme/README.en.md) · [日本語](language/readme/README.ja.md) · [한국어](language/readme/README.ko.md) · [Русский](language/readme/README.ru.md) · [Français](language/readme/README.fr.md) · [Deutsch](language/readme/README.de.md)
+[其他语言](language/readme/)
 
 macOS 原生归档管理器。双栏布局，左栏浏览文件系统，右栏展开压缩包内部。
 
