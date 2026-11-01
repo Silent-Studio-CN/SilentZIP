@@ -54,7 +54,7 @@ macOS 原生归档管理器。双栏布局，左栏浏览文件系统，右栏�
 **为什么自己编译**：7-Zip 官方提供的 macOS 二进制停在 23.01（2023-06-20），
 而源码已更新到 26.01（2026-04-27）。自行编译以消除这个版本差。
 
-**编译方式**（可复现，仅用 Apple 自带 clang）：
+**编译方式**（仅用 Apple 自带 clang）：
 
     cd CPP/7zip/Bundles/Alone2
     make -j8 -f makefile.gcc
@@ -74,7 +74,7 @@ cab / dmg / msi / wim / chm / vmdk / hfs / apfs / 旧版 Office（Compound）等
 - 10 种压缩格式的默认打开方式指向 SilentZIP
 - Finder 右键服务注册（用 SilentZIP 打开 / 解压到此处）
 
-不需要管理员权限，不需要手动设置。被其它软件抢走默认后，
+不需要管理员权限。被其它软件抢走默认后，
 可从菜单栏 **SilentZIP → 设为默认压缩工具** 抢回。
 
 ---
@@ -126,15 +126,15 @@ SilentZIP 自身采用私有许可协议，见 [LICENSE.md](Resources/LICENSE.md
 
 ## 引擎版本策略
 
-**持续跟进 7-Zip 的每个新版本。**
+跟进 7-Zip 的每个新版本。
 
-当 7-Zip 发布新源码时，一条命令完成升级：
+7-Zip 发布新源码后，升级：
 
     ./engine/build-7zip.sh
 
 脚本会自动探测官方最新的源码版本、下载、编译、替换 Resources/7zz。
 
-**判断依据是官方源码包的日期，不是 Windows 二进制版本号** —— 两者经常不同步。
+**判断依据是官方源码包的日期，不是 Windows 二进制版本号**，两者经常不同步。
 例如 26.05 只有 Windows 版，源码最新仍是 26.01。
 
 详细说明见 [engine/README.md](engine/README.md)。

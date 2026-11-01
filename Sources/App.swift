@@ -95,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
-    /// 退出时把临时解压目录整个删掉 —— 不给用户留垃圾
+    /// 退出时删掉临时解压目录
     func applicationWillTerminate(_ notification: Notification) {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("SilentZIP-Open", isDirectory: true)
@@ -459,7 +459,7 @@ struct FullTermsView: View {
     }
 
     /// LICENSE.md 走 markdown 渲染；第三方原文一律原样输出，
-    /// 连行首缩进都不动 —— 许可文本不允许任何形式的改写
+    /// 行首缩进也保持原样，不改写许可文本
     private var isMarkdown: Bool { files[tab].1 == "LICENSE" }
 
     @ViewBuilder

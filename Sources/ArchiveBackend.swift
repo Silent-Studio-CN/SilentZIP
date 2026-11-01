@@ -30,7 +30,7 @@ enum ArchiveError: LocalizedError {
     }
 }
 
-/// 刻意不加 @MainActor —— 它只做子进程调用，必须在后台线程跑，
+/// 不加 @MainActor：只做子进程调用，必须跑在后台线程。
 /// 否则解压大包会把界面卡死。
 final class ArchiveBackend: @unchecked Sendable {
     static let shared = ArchiveBackend()
