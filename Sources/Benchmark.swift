@@ -22,7 +22,7 @@ enum Benchmark {
     private static func execute() -> String {
         guard let tool = Bundle.main.url(forResource: "7zz", withExtension: nil),
               FileManager.default.isExecutableFile(atPath: tool.path) else {
-            return "找不到 7-Zip 引擎"
+            return L10n.t("cli.noEngine", "找不到 7-Zip 引擎")
         }
 
         let p = Process()

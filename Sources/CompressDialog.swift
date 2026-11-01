@@ -24,14 +24,14 @@ final class CompressDialog: NSObject {
     private let updatePop = NSPopUpButton()
     private let pathPop = NSPopUpButton()
 
-    private let sfxCheck = NSButton(checkboxWithTitle: "创建自解压程序", target: nil, action: nil)
-    private let sharedCheck = NSButton(checkboxWithTitle: "压缩共享文件", target: nil, action: nil)
-    private let delSrcCheck = NSButton(checkboxWithTitle: "操作完成后删除源文件", target: nil, action: nil)
+    private let sfxCheck = NSButton(checkboxWithTitle: L10n.t("cd.sfx", "创建自解压程序"), target: nil, action: nil)
+    private let sharedCheck = NSButton(checkboxWithTitle: L10n.t("cd.shared", "压缩共享文件"), target: nil, action: nil)
+    private let delSrcCheck = NSButton(checkboxWithTitle: L10n.t("cd.delSrc", "操作完成后删除源文件"), target: nil, action: nil)
 
     private let passwordField = NSSecureTextField()
     private let passwordAgain = NSSecureTextField()
-    private let showPasswordCheck = NSButton(checkboxWithTitle: "显示密码", target: nil, action: nil)
-    private let encryptHeadersCheck = NSButton(checkboxWithTitle: "加密文件名", target: nil, action: nil)
+    private let showPasswordCheck = NSButton(checkboxWithTitle: L10n.t("cd.showPw", "显示密码"), target: nil, action: nil)
+    private let encryptHeadersCheck = NSButton(checkboxWithTitle: L10n.t("cd.encHeaders", "加密文件名"), target: nil, action: nil)
 
     private let formats = ["7z", "zip", "tar", "wim", "gz"]
     /// 界面上的 6 档对应的实际等级值
@@ -80,7 +80,7 @@ final class CompressDialog: NSObject {
             backing: .buffered,
             defer: false
         )
-        window.title = "添加到压缩包"
+        window.title = L10n.t("cd.title", "添加到压缩包")
         window.center()
 
         buildUI()
@@ -105,10 +105,10 @@ final class CompressDialog: NSObject {
         archiveField.widthAnchor.constraint(greaterThanOrEqualToConstant: 380).isActive = true
 
         let browse = NSButton(title: "…", target: self, action: #selector(browseTapped))
-        let browseBtn = NSButton(title: "浏览…", target: self, action: #selector(browseTapped))
+        let browseBtn = NSButton(title: L10n.t("cd.browse", "浏览…"), target: self, action: #selector(browseTapped))
         _ = browse
 
-        let topRow = NSStackView(views: [label("压缩包"), archiveField, browseBtn])
+        let topRow = NSStackView(views: [label(L10n.t("cd.archive", "压缩包")), archiveField, browseBtn])
         topRow.orientation = .horizontal
         topRow.spacing = 8
         root.addArrangedSubview(topRow)
@@ -131,9 +131,9 @@ final class CompressDialog: NSObject {
         root.addArrangedSubview(cols)
 
         // 底部按钮
-        let cancel = NSButton(title: "取消", target: self, action: #selector(cancelTapped))
+        let cancel = NSButton(title: L10n.t("cd.cancel", "取消"), target: self, action: #selector(cancelTapped))
         cancel.keyEquivalent = "\u{1b}"
-        let ok = NSButton(title: "确定", target: self, action: #selector(okTapped))
+        let ok = NSButton(title: L10n.t("cd.ok", "确定"), target: self, action: #selector(okTapped))
         ok.keyEquivalent = "\r"
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -164,12 +164,12 @@ final class CompressDialog: NSObject {
 
         // 7-Zip 只给奇数档：0 仅存储 / 1 极速 / 3 快速 / 5 标准 / 7 最大 / 9 极限
         let levels: [(Int, String)] = [
-            (0, "0 - 仅存储"),
-            (1, "1 - 极速压缩"),
-            (3, "3 - 快速压缩"),
-            (5, "5 - 标准压缩"),
-            (7, "7 - 最大压缩"),
-            (9, "9 - 极限压缩")
+            (0, L10n.t("lv.0", "0 - 仅存储")),
+            (1, L10n.t("lv.1", "1 - 极速压缩")),
+            (3, L10n.t("lv.3", "3 - 快速压缩")),
+            (5, L10n.t("lv.5", "5 - 标准压缩")),
+            (7, L10n.t("lv.7", "7 - 最大压缩")),
+            (9, L10n.t("lv.9", "9 - 极限压缩"))
         ]
         levelPop.addItems(withTitles: levels.map { $0.1 })
         levelPop.selectItem(at: 3)   // 默认 5 - 标准压缩
@@ -191,26 +191,26 @@ final class CompressDialog: NSObject {
         if let i = solids.firstIndex(of: "16g") { solidPop.selectItem(at: i) }
 
         let cores = ProcessInfo.processInfo.activeProcessorCount
-        threadPop.addItem(withTitle: "自动")
+        threadPop.addItem(withTitle: L10n.t("cd.auto", "自动"))
         for i in 1...max(1, cores) { threadPop.addItem(withTitle: String(i)) }
         threadPop.selectItem(at: 0)
 
-        volumeField.placeholderString = "不分卷，或填 100m / 1g"
+        volumeField.placeholderString = L10n.t("cd.volumeHint", "不分卷，或填 100m / 1g")
 
         memoryLabel.font = .systemFont(ofSize: 11)
         memoryLabel.textColor = .secondaryLabelColor
 
         let grid = NSGridView(views: [
-            [label("压缩格式"), formatPop],
-            [label("压缩等级"), levelPop],
-            [label("压缩方法"), methodPop],
-            [label("字典大小"), dictPop],
-            [label("单词大小"), wordPop],
-            [label("固实大小"), solidPop],
-            [label("CPU 线程"), threadPop],
-            [label("内存"), memoryLabel],
-            [label("分卷大小"), volumeField],
-            [label("参数"), extraField]
+            [label(L10n.t("cd.format", "压缩格式")), formatPop],
+            [label(L10n.t("cd.level", "压缩等级")), levelPop],
+            [label(L10n.t("cd.method", "压缩方法")), methodPop],
+            [label(L10n.t("cd.dict", "字典大小")), dictPop],
+            [label(L10n.t("cd.word", "单词大小")), wordPop],
+            [label(L10n.t("cd.solid", "固实大小")), solidPop],
+            [label(L10n.t("cd.threads", "CPU 线程")), threadPop],
+            [label(L10n.t("cd.memory", "内存")), memoryLabel],
+            [label(L10n.t("cd.volume", "分卷大小")), volumeField],
+            [label(L10n.t("cd.params", "参数")), extraField]
         ])
         grid.columnSpacing = 12
         grid.rowSpacing = 8
@@ -234,8 +234,8 @@ final class CompressDialog: NSObject {
         pathPop.addItems(withTitles: PathMode.allCases.map { $0.label })
 
         let topGrid = NSGridView(views: [
-            [label("更新方式"), updatePop],
-            [label("路径模式"), pathPop]
+            [label(L10n.t("cd.updateMode", "更新方式")), updatePop],
+            [label(L10n.t("cd.pathMode", "路径模式")), pathPop]
         ])
         topGrid.columnSpacing = 12
         topGrid.rowSpacing = 8
@@ -243,14 +243,14 @@ final class CompressDialog: NSObject {
         topGrid.column(at: 1).width = 200
         topGrid.setContentHuggingPriority(.required, for: .vertical)
 
-        let optTitle = NSTextField(labelWithString: "选项")
+        let optTitle = NSTextField(labelWithString: L10n.t("cd.options", "选项"))
         optTitle.font = .boldSystemFont(ofSize: 12)
 
-        let encTitle = NSTextField(labelWithString: "加密")
+        let encTitle = NSTextField(labelWithString: L10n.t("cd.encryption", "加密"))
         encTitle.font = .boldSystemFont(ofSize: 12)
 
-        passwordField.placeholderString = "输入密码"
-        passwordAgain.placeholderString = "重新输入"
+        passwordField.placeholderString = L10n.t("cd.pwHint", "输入密码")
+        passwordAgain.placeholderString = L10n.t("cd.pwAgain", "重新输入")
         passwordField.widthAnchor.constraint(equalToConstant: 190).isActive = true
         passwordAgain.widthAnchor.constraint(equalToConstant: 190).isActive = true
 
@@ -259,8 +259,8 @@ final class CompressDialog: NSObject {
         encryptHeadersCheck.state = .off
 
         let encGrid = NSGridView(views: [
-            [label("密码"), passwordField],
-            [label("确认"), passwordAgain],
+            [label(L10n.t("cd.password", "密码")), passwordField],
+            [label(L10n.t("cd.confirm", "确认")), passwordAgain],
             [NSView(), showPasswordCheck],
             [NSView(), encryptHeadersCheck]
         ])
@@ -347,7 +347,7 @@ final class CompressDialog: NSObject {
         passwordField.isHidden = false
         _ = show
         // NSSecureTextField 不能直接切明文，重建一个
-        passwordAgain.placeholderString = show ? "（明文显示）" : "重新输入"
+        passwordAgain.placeholderString = show ? L10n.t("cd.plain", "（明文显示）") : L10n.t("cd.pwAgain", "重新输入")
     }
 
     /// 按当前字典大小估一下内存，给用户一个直观的数
@@ -359,7 +359,7 @@ final class CompressDialog: NSObject {
         // 7-Zip 的经验值：压缩约 12 倍字典，解压约 1.05 倍
         let need = Int(Double(mb) * 12)
         let free = Int(Double(totalGB) * 1024)
-        memoryLabel.stringValue = String(format: "本机 %.1f GB，压缩约需 %d MB",
+        memoryLabel.stringValue = String(format: L10n.t("cd.memHint", "%.0f GB 内存 · 约需 %d MB"),
                                          totalGB, need)
         memoryLabel.textColor = need > free ? .systemOrange : .secondaryLabelColor
     }
@@ -410,7 +410,7 @@ final class CompressDialog: NSObject {
         if !pw.isEmpty {
             if pw != pw2 {
                 let a = NSAlert()
-                a.messageText = "两次输入的密码不一样"
+                a.messageText = L10n.t("cd.pwMismatch", "两次输入的密码不一样")
                 a.runModal()
                 return
             }
@@ -419,7 +419,7 @@ final class CompressDialog: NSObject {
 
         if o.outputPath.isEmpty {
             let a = NSAlert()
-            a.messageText = "还没指定输出文件"
+            a.messageText = L10n.t("cd.noOutput", "还没指定输出文件")
             a.runModal()
             return
         }

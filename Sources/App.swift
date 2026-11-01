@@ -194,17 +194,55 @@ func looksLikeBundle(_ url: URL) -> Bool {
     bundleExts.contains(url.pathExtension.lowercased())
 }
 
-/// 系统本地化的类型名（中文环境下自动是「应用程序」「压缩包」等）
+/// 常见类型的英文名。
+/// UTType.localizedDescription 跟的是**系统**语言，不跟 app 内的语言开关 ——
+/// 系统中文、界面英文时它会返回「PNG 图像」，所以英文界面下走这张表。
+let englishTypeNames: [String: String] = [
+    "png": "PNG image", "jpg": "JPEG image", "jpeg": "JPEG image",
+    "gif": "GIF image", "webp": "WebP image", "heic": "HEIC image",
+    "tiff": "TIFF image", "bmp": "BMP image", "svg": "SVG image",
+    "pdf": "PDF document", "txt": "Text", "md": "Markdown", "rtf": "RTF",
+    "html": "HTML", "htm": "HTML", "css": "CSS", "json": "JSON",
+    "yaml": "YAML", "yml": "YAML", "xml": "XML", "csv": "CSV",
+    "doc": "Word document", "docx": "Word document",
+    "xls": "Excel spreadsheet", "xlsx": "Excel spreadsheet",
+    "ppt": "PowerPoint presentation", "pptx": "PowerPoint presentation",
+    "pages": "Pages document", "numbers": "Numbers spreadsheet",
+    "key": "Keynote presentation",
+    "mp3": "MP3 audio", "wav": "WAV audio", "aac": "AAC audio",
+    "flac": "FLAC audio", "m4a": "M4A audio",
+    "mp4": "MP4 video", "mov": "QuickTime movie", "mkv": "MKV video",
+    "avi": "AVI video", "webm": "WebM video",
+    "jar": "Java archive", "class": "Java class",
+    "sh": "Shell script", "py": "Python script", "js": "JavaScript",
+    "swift": "Swift source", "c": "C source", "cpp": "C++ source",
+    "pem": "Certificate", "cer": "Certificate", "crt": "Certificate",
+    "dmg": "Disk image", "iso": "Disk image", "pkg": "Installer",
+    "dylib": "Library", "so": "Library", "a": "Static library",
+    "sqlite": "SQLite database", "db": "Database",
+    "epub": "EPUB book", "ttf": "Font", "otf": "Font"
+]
+
+/// 类型名。中文界面用系统本地化名，其他语言走英文表。
 func typeName(_ url: URL) -> String {
     let ext = url.pathExtension.lowercased()
     if ext.isEmpty { return L10n.t("type.folder", "文件夹") }
     if ext == "app" { return L10n.t("type.app", "应用程序") }
     if ext == "framework" { return L10n.t("type.framework", "框架") }
-    if let t = UTType(filenameExtension: ext),
-       let d = t.localizedDescription, !d.isEmpty {
-        return d
+
+    let isChinese = L10n.currentCode().hasPrefix("zh")
+
+    if isChinese {
+        if let t = UTType(filenameExtension: ext),
+           let d = t.localizedDescription, !d.isEmpty {
+            return d
+        }
+        return ext.uppercased() + L10n.t("type.fileSuffix", " 文件")
     }
-    return ext.uppercased() + " 文件"
+
+    if let en = englishTypeNames[ext] { return en }
+    if archiveExts.contains(ext) { return L10n.t("type.archive", "Archive") }
+    return ext.uppercased() + " " + L10n.t("type.fileSuffixEn", "file")
 }
 
 // MARK: - 命令行工具
@@ -724,7 +762,14 @@ final class ZipModel: ObservableObject {
     @Published var entries: [ArchiveEntry] = []
     @Published var currentPath: String = ""
     @Published var selection: Set<UUID> = []
-    @Published var status: String = L10n.t("status.noArchive", "选择一个归档文件，或拖进来")
+    @Published var status: String = ""
+
+    /// 初始 status 是在 L10n 加载前求值的，界面起来后补一次
+    func refreshStatusIfIdle() {
+        if archive == nil && status.isEmpty {
+            status = L10n.t("status.noArchive", "选择一个归档文件，或拖进来")
+        }
+    }
     @Published var busy = false
     @Published var infoText: String = ""
     @Published var infoRows: [InfoRow] = []
@@ -1132,6 +1177,8 @@ struct ContentView: View {
         }
         .frame(minWidth: 1000, idealWidth: 1180, minHeight: 600)
         .onAppear {
+            model.refreshStatusIfIdle()
+
             // 把界面的动作挂给菜单栏
             AppActions.shared.openArchive = { showOpen = true }
             AppActions.shared.extractAll = { askExtractAll() }

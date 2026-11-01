@@ -88,10 +88,13 @@ struct CompressOptions {
 
     /// 界面上显示的一行摘要
     var summary: String {
-        var s = format.uppercased() + " · " + String(level) + " 级"
+        var s = format.uppercased() + " · " + String(level)
+            + " " + L10n.t("cd.levelTag", "级")
         if format == "7z" { s += " · " + method }
-        if !password.isEmpty { s += " · 加密" }
-        if !volumeSize.isEmpty { s += " · 分卷 " + volumeSize }
+        if !password.isEmpty { s += " · " + L10n.t("cd.encTag", "加密") }
+        if !volumeSize.isEmpty {
+            s += " · " + L10n.t("cd.volTag", "分卷") + " " + volumeSize
+        }
         return s
     }
 }
@@ -103,7 +106,15 @@ enum UpdateMode: String, CaseIterable {
     case sync          = "同步压缩包内容"
     case addOnly       = "仅添加新文件"
 
-    var label: String { rawValue }
+    var label: String {
+        switch self {
+        case .addAndReplace: return L10n.t("um.addAndReplace", rawValue)
+        case .addAndUpdate:  return L10n.t("um.addAndUpdate", rawValue)
+        case .updateAndAdd:  return L10n.t("um.updateAndAdd", rawValue)
+        case .sync:          return L10n.t("um.sync", rawValue)
+        case .addOnly:       return L10n.t("um.addOnly", rawValue)
+        }
+    }
 }
 
 enum PathMode: String, CaseIterable {
@@ -111,5 +122,11 @@ enum PathMode: String, CaseIterable {
     case absolute = "绝对路径"
     case full     = "完整路径"
 
-    var label: String { rawValue }
+    var label: String {
+        switch self {
+        case .relative: return L10n.t("pm.relative", rawValue)
+        case .absolute: return L10n.t("pm.absolute", rawValue)
+        case .full:     return L10n.t("pm.full", rawValue)
+        }
+    }
 }

@@ -35,11 +35,11 @@ enum PresetStore {
 
     /// 内置的几套，用户没自定义过时用这些
     static let builtins: [CompressPreset] = [
-        CompressPreset(name: "标准 7z", format: "7z", level: 5),
-        CompressPreset(name: "极限压缩", format: "7z", level: 9),
-        CompressPreset(name: "快速打包", format: "7z", level: 0, solid: false),
-        CompressPreset(name: "通用 zip", format: "zip", level: 5),
-        CompressPreset(name: "tar 归档", format: "tar", level: 0),
+        CompressPreset(name: L10n.t("preset.standard", "标准 7z"), format: "7z", level: 5),
+        CompressPreset(name: L10n.t("preset.ultra", "极限压缩"), format: "7z", level: 9),
+        CompressPreset(name: L10n.t("preset.fast", "快速打包"), format: "7z", level: 0, solid: false),
+        CompressPreset(name: L10n.t("preset.zip", "通用 zip"), format: "zip", level: 5),
+        CompressPreset(name: L10n.t("preset.tar", "tar 归档"), format: "tar", level: 0),
     ]
 
     static var all: [CompressPreset] {
