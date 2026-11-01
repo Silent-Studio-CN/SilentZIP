@@ -75,7 +75,7 @@ final class CompressDialog: NSObject {
         options.outputPath = suggested
 
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 860, height: 470),
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 470),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -102,7 +102,7 @@ final class CompressDialog: NSObject {
         // 顶部：压缩包路径
         archiveField.stringValue = options.outputPath
         archiveField.font = .systemFont(ofSize: 12)
-        archiveField.widthAnchor.constraint(greaterThanOrEqualToConstant: 640).isActive = true
+        archiveField.widthAnchor.constraint(greaterThanOrEqualToConstant: 380).isActive = true
 
         let browse = NSButton(title: "…", target: self, action: #selector(browseTapped))
         let browseBtn = NSButton(title: "浏览…", target: self, action: #selector(browseTapped))
@@ -117,14 +117,17 @@ final class CompressDialog: NSObject {
         let left = buildLeftColumn()
         let right = buildRightColumn()
 
-        let cols = NSStackView(views: [left, right])
-        cols.orientation = .horizontal
-        cols.alignment = .top
-        cols.distribution = .fill
-        cols.spacing = 40
+        // 两栏用网格定宽 —— StackView 的 fill 会把多余空间塞进中间，
+        // 右栏就被推到右边去了
+        let cols = NSGridView(views: [[left, right]])
+        cols.columnSpacing = 24
+        cols.rowSpacing = 0
+        cols.column(at: 0).width = 306
+        cols.column(at: 1).width = 330
+        cols.column(at: 0).xPlacement = .leading
+        cols.column(at: 1).xPlacement = .leading
+        cols.rowAlignment = .firstBaseline
         cols.setContentHuggingPriority(.required, for: .vertical)
-        left.setContentHuggingPriority(.required, for: .vertical)
-        right.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(cols)
 
         // 底部按钮
@@ -193,9 +196,6 @@ final class CompressDialog: NSObject {
         threadPop.selectItem(at: 0)
 
         volumeField.placeholderString = "不分卷，或填 100m / 1g"
-        extraField.placeholderString = ""
-        volumeField.widthAnchor.constraint(equalToConstant: 210).isActive = true
-        extraField.widthAnchor.constraint(equalToConstant: 210).isActive = true
 
         memoryLabel.font = .systemFont(ofSize: 11)
         memoryLabel.textColor = .secondaryLabelColor
@@ -212,14 +212,10 @@ final class CompressDialog: NSObject {
             [label("分卷大小"), volumeField],
             [label("参数"), extraField]
         ])
-        grid.columnSpacing = 10
+        grid.columnSpacing = 12
         grid.rowSpacing = 8
         grid.column(at: 0).xPlacement = .trailing
-        grid.column(at: 0).width = 76      // 标签列固定，宽度不再随文字跳
-        grid.column(at: 1).width = 210
-        for row in 0..<grid.numberOfRows {
-            grid.row(at: row).height = 26
-        }
+        grid.column(at: 1).width = 200
         grid.setContentHuggingPriority(.defaultHigh, for: .vertical)
         grid.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -243,8 +239,8 @@ final class CompressDialog: NSObject {
         ])
         topGrid.columnSpacing = 12
         topGrid.rowSpacing = 8
-        topGrid.column(at: 0).xPlacement = .trailing
-        topGrid.column(at: 1).width = 160
+        topGrid.column(at: 0).xPlacement = .leading
+        topGrid.column(at: 1).width = 200
         topGrid.setContentHuggingPriority(.required, for: .vertical)
 
         let optTitle = NSTextField(labelWithString: "选项")
@@ -270,7 +266,7 @@ final class CompressDialog: NSObject {
         ])
         encGrid.columnSpacing = 12
         encGrid.rowSpacing = 8
-        encGrid.column(at: 0).xPlacement = .trailing
+        encGrid.column(at: 0).xPlacement = .leading
         encGrid.setContentHuggingPriority(.required, for: .vertical)
 
         let checks = NSStackView(views: [sfxCheck, sharedCheck, delSrcCheck])
@@ -306,7 +302,7 @@ final class CompressDialog: NSObject {
     private func divider() -> NSBox {
         let b = NSBox()
         b.boxType = .separator
-        b.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        b.widthAnchor.constraint(equalToConstant: 330).isActive = true
         return b
     }
 
@@ -363,7 +359,7 @@ final class CompressDialog: NSObject {
         // 7-Zip 的经验值：压缩约 12 倍字典，解压约 1.05 倍
         let need = Int(Double(mb) * 12)
         let free = Int(Double(totalGB) * 1024)
-        memoryLabel.stringValue = String(format: "%.0f GB 内存 · 约需 %d MB",
+        memoryLabel.stringValue = String(format: "本机 %.1f GB，压缩约需 %d MB",
                                          totalGB, need)
         memoryLabel.textColor = need > free ? .systemOrange : .secondaryLabelColor
     }
