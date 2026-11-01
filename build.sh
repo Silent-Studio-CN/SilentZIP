@@ -38,6 +38,8 @@ if [ -f Resources/7zz ]; then
   codesign --force --sign - "$APP/Contents/Resources/7zz" 2>/dev/null || true
 fi
 
+swiftc -swift-version 5 -O -target "$TARGET" CLI/main.swift -o "$APP/Contents/MacOS/sz" 2>/dev/null || echo "  （CLI 编译跳过）"
+
 echo "编译 Finder 扩展…"
 swiftc -swift-version 5 -O -target "$TARGET" FinderExt/FinderSync.swift -o "$APPEX_BIN" \
     -framework Cocoa -framework FinderSync

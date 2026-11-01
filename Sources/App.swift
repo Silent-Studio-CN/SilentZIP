@@ -206,6 +206,50 @@ func typeName(_ url: URL) -> String {
     return ext.uppercased() + " 文件"
 }
 
+// MARK: - 命令行工具
+enum CLITool {
+    /// 把 app 内的 sz 链到 /usr/local/bin，方便终端直接调用
+    static func install() {
+        guard let exe = Bundle.main.executableURL else { return }
+        let sz = exe.deletingLastPathComponent().appendingPathComponent("sz")
+        guard FileManager.default.isExecutableFile(atPath: sz.path) else {
+            alert("命令行工具缺失", "app 里没找到 sz，可能这次构建没编进去。")
+            return
+        }
+
+        let target = URL(fileURLWithPath: "/usr/local/bin/sz")
+        let fm = FileManager.default
+
+        // 已存在就先删（可能是旧链接）
+        if fm.fileExists(atPath: target.path) {
+            if (try? fm.destinationOfSymbolicLink(atPath: target.path)) == nil {
+                alert("安装失败", "/usr/local/bin/sz 已存在且不是软链，请手动处理。")
+                return
+            }
+            try? fm.removeItem(at: target)
+        }
+
+        do {
+            try fm.createSymbolicLink(at: target, withDestinationURL: sz)
+            alert("已安装", "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
+        } catch {
+            alert("安装失败", """
+            没有权限写入 /usr/local/bin。
+
+            可以手动执行：
+            sudo ln -sf "(sz.path)" /usr/local/bin/sz
+            """)
+        }
+    }
+
+    private static func alert(_ title: String, _ body: String) {
+        let a = NSAlert()
+        a.messageText = title
+        a.informativeText = body
+        a.runModal()
+    }
+}
+
 // MARK: - 把自己注册成默认压缩工具
 enum ArchiveTypes {
     static let utis: [String] = [
@@ -880,6 +924,39 @@ final class ZipModel: ObservableObject {
         }
     }
 
+    /// 往当前打开的归档里添加磁盘上的文件
+    func addToArchive(_ urls: [URL]) {
+        guard let a = archive, !urls.isEmpty else { return }
+        busy = true
+        status = "添加中…"
+        Task.detached(priority: .userInitiated) {
+            do {
+                try ArchiveBackend.shared.add(URL(fileURLWithPath: a.path), files: urls)
+                let list = try ArchiveBackend.shared.list(URL(fileURLWithPath: a.path))
+                await MainActor.run {
+                    self.entries = list
+                    self.status = "已添加 \(urls.count) 项"
+                    self.busy = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.status = "添加失败：" + error.localizedDescription
+                    self.busy = false
+                }
+            }
+        }
+    }
+
+    /// 导出单个条目到临时目录，给拖拽用
+    func exportEntryForDrag(_ e: ArchiveEntry, completion: @escaping (URL?) -> Void) {
+        guard let a = archive else { completion(nil); return }
+        Task.detached(priority: .userInitiated) {
+            let url = try? ArchiveBackend.shared.extractEntry(
+                URL(fileURLWithPath: a.path), path: e.path)
+            await MainActor.run { completion(url) }
+        }
+    }
+
     /// 归档内复制 / 移动
     func moveOrCopy(from: String, to: String, copy: Bool) {
         guard let a = archive else { return }
@@ -1137,6 +1214,9 @@ struct ContentView: View {
                disabled: model.archive == nil) { askMoveCopy(copy: true) }
             tb("arrow.right.doc.on.clipboard", "移动/重命名选中条目",
                disabled: model.archive == nil) { askMoveCopy(copy: false) }
+            tb("plus.rectangle.on.folder",
+               "往当前归档里添加文件",
+               disabled: model.archive == nil) { askAddToArchive() }
             tb("trash",
                model.canModify ? "删除选中" : "系统目录受保护，不能删除",
                disabled: model.archive == nil || !model.canModify) { model.removeSelected() }
@@ -1278,6 +1358,25 @@ struct ContentView: View {
                     }
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2) { model.enterEntry(e) }
+                    // 拖到 Finder 就是导出：先临时解出来，再交给系统
+                    .onDrag {
+                        let provider = NSItemProvider()
+                        let name = (e.path as NSString).lastPathComponent
+                        provider.suggestedName = name
+                        provider.registerFileRepresentation(
+                            forTypeIdentifier: UTType.data.identifier,
+                            fileOptions: [],
+                            visibility: .all
+                        ) { completion in
+                            Task { @MainActor in
+                                model.exportEntryForDrag(e) { url in
+                                    completion(url, false, nil)
+                                }
+                            }
+                            return nil
+                        }
+                        return provider
+                    }
                     .contextMenu {
                         Button("打开") { model.openEntry(e) }
                         Button("展开嵌套归档") { model.enterEntry(e) }
@@ -1366,6 +1465,22 @@ struct ContentView: View {
     }
 
     private func askAndCreateArchive() { askCreate(items: model.fsSelectedItems, ext: "7z") }
+
+    /// 选文件，加进当前归档
+    private func askAddToArchive() {
+        guard model.archive != nil else { return }
+        let panel = NSOpenPanel()
+        panel.title = "添加到归档"
+        panel.prompt = "添加"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.begin { resp in
+            guard resp == .OK, !panel.urls.isEmpty else { return }
+            let urls = panel.urls
+            Task { @MainActor in model.addToArchive(urls) }
+        }
+    }
 
     /// 弹保存面板，选格式和位置
     private func askCreate(items: [URL], ext: String) {
@@ -1470,6 +1585,9 @@ struct SilentZIPApp: App {
                 Divider()
                 Button("设为默认压缩工具") {
                     ArchiveTypes.becomeDefault()
+                }
+                Button("安装命令行工具…") {
+                    CLITool.install()
                 }
             }
         }

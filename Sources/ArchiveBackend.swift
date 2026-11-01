@@ -235,6 +235,37 @@ final class ArchiveBackend: @unchecked Sendable {
         return nil
     }
 
+    // MARK: - 往已有归档里加文件
+
+    /// 把磁盘上的文件/文件夹加进已有归档。
+    /// 用相对路径加入，保证归档内路径干净。
+    func add(_ archive: URL, files: [URL]) throws {
+        guard let tool = toolPath else { throw ArchiveError.toolMissing }
+        guard !files.isEmpty else { return }
+
+        // 以所有文件的最深公共父目录为工作目录，避免出现绝对路径
+        let dirs = files.map { $0.deletingLastPathComponent().path }
+        let common = dirs.reduce(dirs.first ?? "/") { a, b in
+            let ap = a.split(separator: "/")
+            let bp = b.split(separator: "/")
+            var out: [Substring] = []
+            for (x, y) in zip(ap, bp) where x == y { out.append(x) }
+            return "/" + out.joined(separator: "/")
+        }
+
+        let root = URL(fileURLWithPath: common.isEmpty ? "/" : common)
+        let relatives = files.map { u -> String in
+            var p = u.path
+            if p.hasPrefix(root.path + "/") { p = String(p.dropFirst(root.path.count + 1)) }
+            return p
+        }
+
+        var args = ["a", archive.path]
+        args.append(contentsOf: relatives)
+        let (_, err, code) = try run(tool, args, cwd: root)
+        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? "添加失败" : err) }
+    }
+
     // MARK: - 归档内重命名/移动
 
     func rename(_ archive: URL, from: String, to: String) throws {

@@ -9,6 +9,15 @@ WORK=$(mktemp -d)
 trap "rm -rf $WORK" EXIT
 
 detect_version() {
+    # 26.05 起官方在 GitHub 发版，优先查 releases
+    V=$(curl -sL --max-time 30 https://api.github.com/repos/ip7z/7zip/releases/latest \
+      | grep -oE '"tag_name": *"[0-9.]+"' \
+      | grep -oE '[0-9]+\.[0-9]+' | head -1)
+    if [ -n "$V" ]; then
+        echo "$V" | tr -d "."
+        return
+    fi
+    # 回退：老版本在 7-zip.org
     curl -sL --max-time 30 https://www.7-zip.org/download.html \
       | grep -oE "a/7z[0-9]+-src\.7z" \
       | sed "s|a/7z||; s|-src\.7z||" \
@@ -26,7 +35,8 @@ fi
 
 echo "目标版本：7-Zip $VER"
 
-URL="https://www.7-zip.org/a/7z$VER-src.7z"
+TAG=$(echo "$VER" | sed "s/^\(..\)\(..\)$/\1.\2/")
+URL="https://github.com/ip7z/7zip/releases/download/$TAG/7z$VER-src.7z"
 echo "下载源码：$URL"
 
 cd "$WORK"
