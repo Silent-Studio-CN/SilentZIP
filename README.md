@@ -1,5 +1,7 @@
 # SilentZIP
 
+**中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
+
 macOS 原生归档管理器。双栏布局，左栏浏览文件系统，右栏展开压缩包内部。
 
 内置自行编译的 **7-Zip 26.05** 引擎，不依赖用户安装 Homebrew 或任何第三方工具。

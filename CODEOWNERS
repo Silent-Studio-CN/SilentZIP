@@ -1,0 +1,10 @@
+# 谁负责哪些文件
+# 格式：路径  负责人
+
+*                       @Silent-xiaomiao
+
+# 语言文件由维护者审核后合并，防止恶意改动或格式破坏
+/language/              @Silent-xiaomiao
+
+# README 各语言版本同样需要审核
+/*.md                   @Silent-xiaomiao
