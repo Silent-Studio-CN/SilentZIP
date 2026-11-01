@@ -2,7 +2,16 @@
 set -e
 cd "$(dirname "$0")"
 
+ARCH="${ARCH:-arm64}"
+if [ "$ARCH" = "x86_64" ]; then
+  TARGET="x86_64-apple-macosx13.0"
+else
+  TARGET="arm64-apple-macosx13.0"
+fi
 APP="SilentZIP.app"
+if [ "$ARCH" = "x86_64" ]; then
+  APP="SilentZIP-x64.app"
+fi
 BIN="$APP/Contents/MacOS/SilentZIP"
 APPEX="$APP/Contents/PlugIns/SilentZIPFinder.appex"
 APPEX_BIN="$APPEX/Contents/MacOS/SilentZIPFinder"
@@ -12,7 +21,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 mkdir -p "$APPEX/Contents/MacOS"
 
 echo "编译主程序…"
-swiftc -swift-version 5 -O Sources/*.swift -o "$BIN" \
+swiftc -swift-version 5 -O -target "$TARGET" Sources/*.swift -o "$BIN" \
     -framework SwiftUI -framework AppKit -framework UniformTypeIdentifiers
 
 if [ -f Resources/SilentZIP.icns ]; then
@@ -30,7 +39,7 @@ if [ -f Resources/7zz ]; then
 fi
 
 echo "编译 Finder 扩展…"
-swiftc -swift-version 5 -O FinderExt/FinderSync.swift -o "$APPEX_BIN" \
+swiftc -swift-version 5 -O -target "$TARGET" FinderExt/FinderSync.swift -o "$APPEX_BIN" \
     -framework Cocoa -framework FinderSync
 
 cat > "$APPEX/Contents/Info.plist" <<'AEXPLIST'

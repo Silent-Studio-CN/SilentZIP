@@ -8,3 +8,5 @@ SilentZIP.app/
 # 日志 / 临时
 *.log
 *.ppm
+SilentZIP-x64.app/
+SilentZIP.app/

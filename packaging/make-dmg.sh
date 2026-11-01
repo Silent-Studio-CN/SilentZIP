@@ -1,13 +1,15 @@
 #!/bin/bash
 # SilentZIP DMG 打包 —— Silent 风格
 set -euo pipefail
+TAG="${2:-}"
+VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${1:-SilentZIP.app}/Contents/Info.plist" 2>/dev/null || echo 0.0.0)
 cd "$(dirname "$0")/.."
 
-APP="SilentZIP.app"
+APP="${1:-SilentZIP.app}"
 VOL="SilentZIP"
-STAGE="packaging/.stage"
-RW="packaging/.rw.dmg"
-OUT="packaging/SilentZIP-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist" 2>/dev/null || echo 0.0.0).dmg"
+STAGE="packaging/.stage$TAG"
+RW="packaging/.rw$TAG.dmg"
+OUT="packaging/SilentZIP-${VER}${TAG}.dmg"
 
 echo "① 准备背景图"
 if [ ! -f packaging/background.tiff ]; then
