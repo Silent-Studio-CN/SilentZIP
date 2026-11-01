@@ -1,8 +1,8 @@
 # SilentZIP
 
-[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · **Français** · [Deutsch](README.de.md)
+[中文](../../README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · **Français** · [Deutsch](README.de.md)
 
-> Version condensée. Voir la [version anglaise](README.en.md) ou [chinoise](README.md) pour les détails.
+> Version condensée. Voir la [version anglaise](README.en.md) ou [chinoise](../../README.md) pour les détails.
 
 Gestionnaire d'archives pour macOS. Double-cliquez sur une archive pour voir son contenu — sans l'extraire d'abord.
 

@@ -6,7 +6,7 @@
 
 ## 提交语言文件
 
-语言文件在 `language/` 目录，是纯文本 INI 格式。不需要懂编程也能改。
+语言文件在 `language/app/` 目录，是纯文本 INI 格式。不需要懂编程也能改。
 
 ### 格式
 
@@ -21,7 +21,7 @@
 
 ### 新增一门语言
 
-1. 复制 `language/zh-Hans.ini`，改名成对应的语言代码
+1. 复制 `language/app/zh-Hans.ini`，改名成对应的语言代码
 2. 只改等号右边的内容，**左边一行都不要动**
 3. 提交 PR
 
@@ -61,13 +61,13 @@
 
 README 按语言拆文件，命名规则：
 
-    README.md        简体中文（主文件）
-    README.en.md     英语
-    README.ja.md     日语
-    README.ko.md     韩语
-    README.ru.md     俄语
-    README.fr.md     法语
-    README.de.md     德语
+    README.md（仓库根目录）   简体中文
+    language/readme/README.en.md   英语
+    language/readme/README.ja.md   日语
+    language/readme/README.ko.md   韩语
+    language/readme/README.ru.md   俄语
+    language/readme/README.fr.md   法语
+    language/readme/README.de.md   德语
 
 提交时**只改自己那份**，别动别人的，也别动主 README。
 

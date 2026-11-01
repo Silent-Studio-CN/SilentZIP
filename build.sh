@@ -27,9 +27,9 @@ swiftc -swift-version 5 -O -target "$TARGET" Sources/*.swift -o "$BIN" \
 if [ -f Resources/SilentZIP.icns ]; then
   cp Resources/SilentZIP.icns "$APP/Contents/Resources/SilentZIP.icns"
 fi
-if [ -d language ]; then
-  mkdir -p "$APP/Contents/Resources/language"
-  cp language/*.ini "$APP/Contents/Resources/language/" 2>/dev/null
+if [ -d language/app ]; then
+  mkdir -p "$APP/Contents/Resources/app"
+  cp language/app/*.ini "$APP/Contents/Resources/app/" 2>/dev/null
 fi
 
 for f in LICENSE.md THIRD-PARTY-7zip.txt COPYING.LGPL-2.1.txt; do

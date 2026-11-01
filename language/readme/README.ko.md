@@ -1,8 +1,8 @@
 # SilentZIP
 
-[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어** · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
+[中文](../../README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어** · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
 
-> 요약본입니다. 자세한 내용은 [영어판](README.en.md) 또는 [중국어판](README.md)을 참고하세요.
+> 요약본입니다. 자세한 내용은 [영어판](README.en.md) 또는 [중국어판](../../README.md)을 참고하세요.
 
 macOS용 압축 관리 프로그램. 압축 파일을 더블클릭하면 바로 안을 볼 수 있습니다. 먼저 풀 필요가 없습니다.
 

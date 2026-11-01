@@ -1,8 +1,8 @@
 # SilentZIP
 
-[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · **Deutsch**
+[中文](../../README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · **Deutsch**
 
-> Gekürzte Fassung. Details in der [englischen](README.en.md) oder [chinesischen](README.md) Version.
+> Gekürzte Fassung. Details in der [englischen](README.en.md) oder [chinesischen](../../README.md) Version.
 
 Archivmanager für macOS. Doppelklick auf ein Archiv zeigt den Inhalt — ohne vorher zu entpacken.
 

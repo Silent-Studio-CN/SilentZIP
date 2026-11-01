@@ -1,8 +1,8 @@
 # SilentZIP
 
-[中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · **Русский** · [Français](README.fr.md) · [Deutsch](README.de.md)
+[中文](../../README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · **Русский** · [Français](README.fr.md) · [Deutsch](README.de.md)
 
-> Это краткая версия. Подробности — в [английской](README.en.md) или [китайской](README.md) версии.
+> Это краткая версия. Подробности — в [английской](README.en.md) или [китайской](../../README.md) версии.
 
 Менеджер архивов для macOS. Двойной клик по архиву — и видно, что внутри. Распаковывать заранее не нужно.
 

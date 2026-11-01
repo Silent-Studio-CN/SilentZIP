@@ -1,6 +1,6 @@
 # SilentZIP
 
-[中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
+[中文](../../README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
 
 An archive manager for macOS. Double-click a compressed file to see what's inside — no need to extract first.
 

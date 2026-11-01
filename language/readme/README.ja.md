@@ -1,8 +1,8 @@
 # SilentZIP
 
-[中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
+[中文](../../README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
 
-> これは簡易版です。詳細は [英語版](README.en.md) または [中国語版](README.md) を参照してください。
+> これは簡易版です。詳細は [英語版](README.en.md) または [中国語版](../../README.md) を参照してください。
 
 macOS 用のアーカイブ管理アプリ。圧縮ファイルをダブルクリックすると中身がそのまま見えます。先に解凍する必要はありません。
 

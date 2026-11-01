@@ -29,7 +29,7 @@ enum L10n {
 
         // 其次用 app 内置的
         if let url = Bundle.main.url(forResource: lang, withExtension: "ini",
-                                     subdirectory: "language"),
+                                     subdirectory: "app"),
            let text = try? String(contentsOf: url, encoding: .utf8) {
             parse(text)
         }
