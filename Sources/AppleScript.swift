@@ -24,7 +24,7 @@ private func enginePath() -> String? {
 
 @discardableResult
 private func run7z(_ args: [String], cwd: URL? = nil) -> (String, Int32) {
-    guard let tool = enginePath() else { return ("找不到 7-Zip 引擎", 1) }
+    guard let tool = enginePath() else { return (L10n.t("cli.noEngine", "找不到 7-Zip 引擎"), 1) }
     let p = Process()
     p.executableURL = URL(fileURLWithPath: tool)
     p.arguments = args
@@ -44,7 +44,7 @@ final class ExtractScriptCommand: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
         guard let fileURL = directParameter as? URL else {
             scriptErrorNumber = 1
-            scriptErrorString = "需要一个压缩包路径"
+            scriptErrorString = L10n.t("as.needArchive", "需要一个压缩包路径")
             return nil
         }
         let dest: URL = (evaluatedArguments?["toDir"] as? URL)
@@ -53,7 +53,7 @@ final class ExtractScriptCommand: NSScriptCommand {
         let (out, code) = run7z(["x", fileURL.path, "-o" + dest.path, "-y"])
         if code != 0 {
             scriptErrorNumber = 2
-            scriptErrorString = out.isEmpty ? "解压失败" : out
+            scriptErrorString = out.isEmpty ? L10n.t("as.extractFailed", "解压失败") : out
             return nil
         }
         return dest.path
@@ -72,12 +72,12 @@ final class CompressScriptCommand: NSScriptCommand {
         }
         guard !items.isEmpty else {
             scriptErrorNumber = 1
-            scriptErrorString = "需要至少一个文件或文件夹"
+            scriptErrorString = L10n.t("as.needItems", "需要至少一个文件或文件夹")
             return nil
         }
         guard let target = evaluatedArguments?["toArchive"] as? URL else {
             scriptErrorNumber = 1
-            scriptErrorString = "缺少 to 参数（输出路径）"
+            scriptErrorString = L10n.t("as.missingTo", "缺少 to 参数（输出路径）")
             return nil
         }
 
@@ -87,7 +87,7 @@ final class CompressScriptCommand: NSScriptCommand {
         let (out, code) = run7z(args)
         if code != 0 {
             scriptErrorNumber = 2
-            scriptErrorString = out.isEmpty ? "压缩失败" : out
+            scriptErrorString = out.isEmpty ? L10n.t("err.compress", "压缩失败") : out
             return nil
         }
         return target.path
@@ -100,13 +100,13 @@ final class ListScriptCommand: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
         guard let fileURL = directParameter as? URL else {
             scriptErrorNumber = 1
-            scriptErrorString = "需要一个压缩包路径"
+            scriptErrorString = L10n.t("as.needArchive", "需要一个压缩包路径")
             return nil
         }
         let (out, code) = run7z(["l", "-slt", "-ba", fileURL.path])
         if code != 0 {
             scriptErrorNumber = 2
-            scriptErrorString = out.isEmpty ? "读取失败" : out
+            scriptErrorString = out.isEmpty ? L10n.t("as.readFailed", "读取失败") : out
             return nil
         }
         var paths: [String] = []

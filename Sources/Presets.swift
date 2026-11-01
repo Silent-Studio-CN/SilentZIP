@@ -22,9 +22,9 @@ struct CompressPreset: Codable, Identifiable, Hashable {
     }
 
     var summary: String {
-        var s = format.uppercased() + " · 压缩级别 " + String(level)
-        if !solid && format == "7z" { s += " · 非固实" }
-        if !password.isEmpty { s += " · 加密" }
+        var s = format.uppercased() + " · " + L10n.t("preset.levelTag", "压缩级别") + " " + String(level)
+        if !solid && format == "7z" { s += " · " + L10n.t("preset.notSolid", "非固实") }
+        if !password.isEmpty { s += " · " + L10n.t("cd.encTag", "加密") }
         return s
     }
 }

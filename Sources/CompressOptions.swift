@@ -100,33 +100,33 @@ struct CompressOptions {
 }
 
 enum UpdateMode: String, CaseIterable {
-    case addAndReplace = "添加并替换文件"
-    case addAndUpdate  = "添加并更新文件"
-    case updateAndAdd  = "更新并添加文件"
-    case sync          = "同步压缩包内容"
-    case addOnly       = "仅添加新文件"
+    case addAndReplace = "addAndReplace"
+    case addAndUpdate  = "addAndUpdate"
+    case updateAndAdd  = "updateAndAdd"
+    case sync          = "sync"
+    case addOnly       = "addOnly"
 
     var label: String {
         switch self {
-        case .addAndReplace: return L10n.t("um.addAndReplace", rawValue)
-        case .addAndUpdate:  return L10n.t("um.addAndUpdate", rawValue)
-        case .updateAndAdd:  return L10n.t("um.updateAndAdd", rawValue)
-        case .sync:          return L10n.t("um.sync", rawValue)
-        case .addOnly:       return L10n.t("um.addOnly", rawValue)
+        case .addAndReplace: return L10n.t("um.addAndReplace", "添加并替换文件")
+        case .addAndUpdate:  return L10n.t("um.addAndUpdate", "添加并更新文件")
+        case .updateAndAdd:  return L10n.t("um.updateAndAdd", "更新并添加文件")
+        case .sync:          return L10n.t("um.sync", "同步压缩包内容")
+        case .addOnly:       return L10n.t("um.addOnly", "仅添加新文件")
         }
     }
 }
 
 enum PathMode: String, CaseIterable {
-    case relative = "相对路径"
-    case absolute = "绝对路径"
-    case full     = "完整路径"
+    case relative = "relative"
+    case absolute = "absolute"
+    case full     = "full"
 
     var label: String {
         switch self {
-        case .relative: return L10n.t("pm.relative", rawValue)
-        case .absolute: return L10n.t("pm.absolute", rawValue)
-        case .full:     return L10n.t("pm.full", rawValue)
+        case .relative: return L10n.t("pm.relative", "相对路径")
+        case .absolute: return L10n.t("pm.absolute", "绝对路径")
+        case .full:     return L10n.t("pm.full", "完整路径")
         }
     }
 }

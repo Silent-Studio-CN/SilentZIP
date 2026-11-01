@@ -24,7 +24,7 @@ enum ArchiveError: LocalizedError {
     case failed(String)
     var errorDescription: String? {
         switch self {
-        case .toolMissing: return "找不到 7z 命令，请先安装：brew install p7zip"
+        case .toolMissing: return L10n.t("err.toolMissing", "找不到 7z 命令，请先安装：brew install p7zip")
         case .failed(let s): return s
         }
     }
@@ -86,7 +86,7 @@ final class ArchiveBackend: @unchecked Sendable {
     func list(_ archive: URL) throws -> [ArchiveEntry] {
         guard let tool = toolPath else { throw ArchiveError.toolMissing }
         let (out, err, code) = try run(tool, ["l", "-slt", "-ba", archive.path])
-        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? "无法读取归档" : err) }
+        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? L10n.t("err.read", "无法读取归档") : err) }
         return Self.parse(out)
     }
 
@@ -183,7 +183,7 @@ final class ArchiveBackend: @unchecked Sendable {
 
         let (_, err, code) = try run(tool, args, cwd: root)
         guard code == 0 else {
-            throw ArchiveError.failed(err.isEmpty ? "压缩失败" : err)
+            throw ArchiveError.failed(err.isEmpty ? L10n.t("err.compress", "压缩失败") : err)
         }
     }
 
@@ -192,7 +192,7 @@ final class ArchiveBackend: @unchecked Sendable {
         guard let tool = toolPath else { throw ArchiveError.toolMissing }
         let (out, err, code) = try run(tool, ["t", archive.path])
         if code != 0 { throw ArchiveError.failed(err.isEmpty ? out : err) }
-        return "完整性检查通过"
+        return L10n.t("test.passed", "完整性检查通过")
     }
     // MARK: - 详细测试
 
@@ -231,20 +231,21 @@ final class ArchiveBackend: @unchecked Sendable {
                      fileCount, folderCount)
             : L10n.f("test.failed", "检查失败：%d 个错误", badCount)
 
+        let unit = L10n.t("test.unit", "个")
         let detail = """
-        \(passed ? "✅ 归档完整" : "❌ 归档存在问题")
+        \(passed ? L10n.t("test.ok", "✅ 归档完整") : L10n.t("test.bad", "❌ 归档存在问题"))
 
-        文件       \(fileCount) 个
-        目录       \(folderCount) 个
-        合计       \(totalCount) 个条目
-        错误       \(badCount) 个
-        退出码     \(code)
-        工具       \(tool)
+        \(L10n.t("test.files", "文件"))       \(fileCount) \(unit)
+        \(L10n.t("test.folders", "目录"))       \(folderCount) \(unit)
+        \(L10n.t("test.total", "合计"))       \(totalCount) \(unit)
+        \(L10n.t("test.errors", "错误"))       \(badCount) \(unit)
+        \(L10n.t("test.exitCode", "退出码"))     \(code)
+        \(L10n.t("test.tool", "工具"))       \(tool)
 
-        ── 输出末尾 ──
+        \(L10n.t("test.tail", "── 输出末尾 ──"))
         \(lines.suffix(8).joined(separator: "\n"))
 
-        \(err.isEmpty ? "" : "── 错误流 ──\n" + err)
+        \(err.isEmpty ? "" : L10n.t("test.errStream", "── 错误流 ──") + "\n" + err)
         """
         return TestResult(summary: summary, detail: detail)
     }
@@ -270,7 +271,7 @@ final class ArchiveBackend: @unchecked Sendable {
                 _ = tool
                 return hit
             }
-            throw ArchiveError.failed("解压后找不到 \(path)")
+            throw ArchiveError.failed(L10n.f("err.extractMissing", "解压后找不到 %@", path))
         }
         return out
     }
@@ -311,7 +312,7 @@ final class ArchiveBackend: @unchecked Sendable {
         var args = ["a", archive.path]
         args.append(contentsOf: relatives)
         let (_, err, code) = try run(tool, args, cwd: root)
-        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? "添加失败" : err) }
+        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? L10n.t("err.add", "添加失败") : err) }
     }
 
     // MARK: - 归档内重命名/移动
@@ -319,7 +320,7 @@ final class ArchiveBackend: @unchecked Sendable {
     func rename(_ archive: URL, from: String, to: String) throws {
         guard let tool = toolPath else { throw ArchiveError.toolMissing }
         let (_, err, code) = try run(tool, ["rn", archive.path, from, to])
-        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? "移动失败" : err) }
+        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? L10n.t("err.move", "移动失败") : err) }
     }
 
     // MARK: - 归档内复制
@@ -339,7 +340,7 @@ final class ArchiveBackend: @unchecked Sendable {
         let src = tmp.appendingPathComponent(from)
         let dst = tmp.appendingPathComponent(to)
         guard FileManager.default.fileExists(atPath: src.path) else {
-            throw ArchiveError.failed("解压出来的条目找不到：\(from)")
+            throw ArchiveError.failed(L10n.f("err.entryMissing", "解压出来的条目找不到：%@", from))
         }
         try FileManager.default.createDirectory(at: dst.deletingLastPathComponent(),
                                                 withIntermediateDirectories: true)
@@ -347,7 +348,7 @@ final class ArchiveBackend: @unchecked Sendable {
 
         // 在临时目录里用相对路径加回去，保证归档内路径是 to 而不是绝对路径
         let (_, err, code) = try run(tool, ["a", archive.path, to], cwd: tmp)
-        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? "复制失败" : err) }
+        guard code == 0 else { throw ArchiveError.failed(err.isEmpty ? L10n.t("err.copy", "复制失败") : err) }
     }
 
     // MARK: - 删除归档内条目

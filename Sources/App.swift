@@ -252,7 +252,7 @@ enum CLITool {
         guard let exe = Bundle.main.executableURL else { return }
         let sz = exe.deletingLastPathComponent().appendingPathComponent("sz")
         guard FileManager.default.isExecutableFile(atPath: sz.path) else {
-            alert(L10n.t("cli.missingTitle", "命令行工具缺失"), "app 里没找到 sz，可能这次构建没编进去。")
+            alert(L10n.t("cli.missingTitle", "命令行工具缺失"), L10n.t("app.cliMissingBody", "app 里没找到 sz，可能这次构建没编进去。"))
             return
         }
 
@@ -262,7 +262,7 @@ enum CLITool {
         // 已存在就先删（可能是旧链接）
         if fm.fileExists(atPath: target.path) {
             if (try? fm.destinationOfSymbolicLink(atPath: target.path)) == nil {
-                alert(L10n.t("error.installFailed", "安装失败"), "/usr/local/bin/sz 已存在且不是软链，请手动处理。")
+                alert(L10n.t("error.installFailed", "安装失败"), L10n.t("app.cliNotSymlink", "/usr/local/bin/sz 已存在且不是软链，请手动处理。"))
                 return
             }
             try? fm.removeItem(at: target)
@@ -270,7 +270,7 @@ enum CLITool {
 
         do {
             try fm.createSymbolicLink(at: target, withDestinationURL: sz)
-            alert(L10n.t("cli.installedTitle", "已安装"), "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
+            alert(L10n.t("cli.installedTitle", "已安装"), L10n.t("app.cliInstalledBody", "现在可以在终端里直接用："))
         } catch {
             CopyableAlert.show(
                 title: L10n.t("error.installFailed", "安装失败"),
@@ -415,7 +415,7 @@ struct AboutView: View {
                         Text(L10n.t("about.tech", "技术")).font(.headline)
 
                         techRow(L10n.t("about.ui", "界面"), "SwiftUI + AppKit")
-                        techRow(L10n.t("about.engine", "归档引擎"), "7-Zip 26.05（自编译）")
+                        techRow(L10n.t("about.engine", "归档引擎"), L10n.t("app.engineName", "7-Zip 26.05（自编译）"))
                         techRow(L10n.t("about.engineCopyright", "引擎版权"), "© 1999-2025 Igor Pavlov")
                         techRow(L10n.t("about.engineLicense", "引擎许可"), "GNU LGPL · unRAR restriction")
 
@@ -679,7 +679,7 @@ final class ZipModel: ObservableObject {
     }
 
     /// 当前选用的压缩预设
-    @Published var preset: CompressPreset = PresetStore.all.first ?? CompressPreset(name: "标准 7z")
+    @Published var preset: CompressPreset = PresetStore.all.first ?? CompressPreset(name: L10n.t("preset.standard", "标准 7z"))
 
     /// 用完整参数压缩
     func createArchive(from items: [URL], to target: URL, options: CompressOptions) {
@@ -1075,7 +1075,7 @@ final class ZipModel: ObservableObject {
                 await MainActor.run {
                     self.entries = list
                     self.selection = []
-                    self.status = (copy ? "已复制到 " : "已移动到 ") + to
+                    self.status = (copy ? L10n.t("app.copiedTo", "已复制到 ") : L10n.t("app.movedTo", "已移动到 ")) + to
                     self.busy = false
                 }
             } catch {
@@ -1113,7 +1113,7 @@ final class ZipModel: ObservableObject {
         infoRows = [
             InfoRow(label: L10n.t("info.file", "文件"), value: a.lastPathComponent),
             InfoRow(label: L10n.t("info.archiveSize", "归档大小"), value: ByteCountFormatter.string(fromByteCount: size, countStyle: .file)),
-            InfoRow(label: L10n.t("info.entries", "条目"), value: "\(entries.count) 个（\(dirs) 目录 / \(files) 文件）"),
+            InfoRow(label: L10n.t("info.entries", "条目"), value: L10n.f("app.itemsCount", "%d 个（%@ 目录 / %@ 文件）", entries.count, String(dirs), String(files))),
             InfoRow(label: L10n.t("info.rawSize", "原始大小"), value: ByteCountFormatter.string(fromByteCount: raw, countStyle: .file)),
             InfoRow(label: L10n.t("col.packed", "压缩后"), value: ByteCountFormatter.string(fromByteCount: packed, countStyle: .file)),
             InfoRow(label: L10n.t("info.ratio", "压缩率"), value: String(format: "%.1f%%", ratio))
@@ -1618,7 +1618,7 @@ struct ContentView: View {
             return
         }
 
-        let base = items.first?.deletingPathExtension().lastPathComponent ?? "归档"
+        let base = items.first?.deletingPathExtension().lastPathComponent ?? L10n.t("app.defaultName", "归档")
         let suggested = model.fsPath.appendingPathComponent(base + ".7z").path
 
         let dlg = CompressDialog()
@@ -1717,7 +1717,7 @@ struct ContentView: View {
         if let idx = presets.firstIndex(where: { $0.name == model.preset.name }) {
             picker.selectItem(at: idx)
         }
-        let label = NSTextField(labelWithString: "压缩预设")
+        let label = NSTextField(labelWithString: L10n.t("app.presetLabel", "压缩预设"))
         label.font = .systemFont(ofSize: 11)
         let box = NSStackView(views: [label, picker])
         box.orientation = .horizontal
