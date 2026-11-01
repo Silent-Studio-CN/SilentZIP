@@ -32,7 +32,7 @@ if [ -d language/app ]; then
   cp language/app/*.ini "$APP/Contents/Resources/app/" 2>/dev/null
 fi
 
-for f in LICENSE.md THIRD-PARTY-7zip.txt COPYING.LGPL-2.1.txt; do
+for f in LICENSE.md THIRD-PARTY-7zip.txt COPYING.LGPL-2.1.txt SilentZIP.sdef; do
   [ -f "Resources/$f" ] && cp "Resources/$f" "$APP/Contents/Resources/$f"
 done
 
@@ -82,6 +82,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleShortVersionString</key><string>0.3.0</string>
   <key>CFBundleExecutable</key><string>SilentZIP</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSAppleScriptEnabled</key><true/>
+  <key>OSAScriptingDefinition</key><string>SilentZIP.sdef</string>
   <key>CFBundleIconFile</key><string>SilentZIP</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>

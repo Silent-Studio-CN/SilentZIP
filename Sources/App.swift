@@ -640,6 +640,9 @@ final class ZipModel: ObservableObject {
         fsItems.filter { fsSelected.contains($0.id) }.map { $0.url }
     }
 
+    /// 当前选用的压缩预设
+    @Published var preset: CompressPreset = PresetStore.all.first ?? CompressPreset(name: "标准 7z")
+
     /// 把选中的文件/文件夹压缩成新归档
     func createArchive(from items: [URL], to target: URL) {
         guard !items.isEmpty else { status = L10n.t("hint.selectToCompress", "先在左边选中要压缩的内容"); return }
@@ -650,10 +653,13 @@ final class ZipModel: ObservableObject {
             let e = target.pathExtension.lowercased()
             return e.isEmpty ? "7z" : e
         }()
+        // 进后台前先把参数抓出来，preset 是主线程属性
+        let extra = preset.arguments
 
         Task.detached(priority: .userInitiated) {
             do {
-                try ArchiveBackend.shared.create(target, from: items, format: fmt)
+                try ArchiveBackend.shared.create(target, from: items, format: fmt,
+                                                  extra: extra)
                 let list = try ArchiveBackend.shared.list(target)
                 await MainActor.run {
                     self.archive = target
@@ -1566,7 +1572,25 @@ struct ContentView: View {
         }
         panel.allowedContentTypes = types
 
+        // 预设下拉：压缩前能直接改用什么参数
+        let picker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 260, height: 26))
+        let presets = PresetStore.all
+        picker.addItems(withTitles: presets.map { $0.name + "  (" + $0.summary + ")" })
+        if let idx = presets.firstIndex(where: { $0.name == model.preset.name }) {
+            picker.selectItem(at: idx)
+        }
+        let label = NSTextField(labelWithString: "压缩预设")
+        label.font = .systemFont(ofSize: 11)
+        let box = NSStackView(views: [label, picker])
+        box.orientation = .horizontal
+        box.spacing = 8
+        box.frame = NSRect(x: 0, y: 0, width: 360, height: 32)
+        panel.accessoryView = box
+
         panel.begin { resp in
+            if let i = presets.firstIndex(where: { $0.name == presets[picker.indexOfSelectedItem].name }) {
+                model.preset = presets[i]
+            }
             guard resp == .OK, let target = panel.url else { return }
             Task { @MainActor in
                 model.createArchive(from: items, to: target)

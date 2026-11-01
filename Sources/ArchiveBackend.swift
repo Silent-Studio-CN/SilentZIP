@@ -147,12 +147,44 @@ final class ArchiveBackend: @unchecked Sendable {
     }
 
     /// 创建归档
-    func create(_ archive: URL, from items: [URL], format: String = "7z") throws {
+    func create(_ archive: URL, from items: [URL], format: String = "7z",
+                extra: [String] = []) throws {
         guard let tool = toolPath else { throw ArchiveError.toolMissing }
-        var args = ["a", "-t" + format, archive.path]
-        args.append(contentsOf: items.map { $0.path })
-        let (_, err, code) = try run(tool, args)
-        guard code == 0 else { throw ArchiveError.failed(err) }
+
+        // 以所有条目的最深公共父目录为工作目录，归档里不留绝对路径
+        let dirs = items.map { $0.deletingLastPathComponent().path }
+        let common: String = {
+            guard let first = dirs.first else { return "/" }
+            var parts = first.split(separator: "/").map(String.init)
+            for d in dirs.dropFirst() {
+                let other = d.split(separator: "/").map(String.init)
+                var keep: [String] = []
+                for (a, b) in zip(parts, other) where a == b { keep.append(a) }
+                parts = keep
+            }
+            return "/" + parts.joined(separator: "/")
+        }()
+
+        let root = URL(fileURLWithPath: common.isEmpty ? "/" : common)
+        let relatives = items.map { u -> String in
+            var p = u.path
+            if root.path != "/", p.hasPrefix(root.path + "/") {
+                p = String(p.dropFirst(root.path.count + 1))
+            } else if root.path == "/" {
+                p = String(p.dropFirst())
+            }
+            return p
+        }
+
+        var args = ["a", "-t" + format]
+        args.append(contentsOf: extra)
+        args.append(archive.path)
+        args.append(contentsOf: relatives)
+
+        let (_, err, code) = try run(tool, args, cwd: root)
+        guard code == 0 else {
+            throw ArchiveError.failed(err.isEmpty ? "压缩失败" : err)
+        }
     }
 
     /// 测试完整性

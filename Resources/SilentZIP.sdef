@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+
+<dictionary title="SilentZIP">
+
+  <suite name="SilentZIP Suite" code="SzpS">
+
+    <command name="extractArchive" code="SzpSxtr " description="解压一个压缩包">
+      <cocoa class="ExtractScriptCommand"/>
+      <direct-parameter type="file" description="压缩包路径"/>
+      <parameter name="to" code="SzpStoo " type="file" description="目标目录">
+        <cocoa key="toDir"/>
+      </parameter>
+      <result type="text"/>
+    </command>
+
+    <command name="compressItems" code="SzpScmp " description="把文件压成归档">
+      <cocoa class="CompressScriptCommand"/>
+      <direct-parameter type="file" description="要压缩的文件"/>
+      <parameter name="to" code="SzpSto2 " type="file" description="输出归档路径">
+        <cocoa key="toArchive"/>
+      </parameter>
+      <result type="text"/>
+    </command>
+
+    <command name="listArchive" code="SzpSlsz " description="列出压缩包内容">
+      <cocoa class="ListScriptCommand"/>
+      <direct-parameter type="file" description="压缩包路径"/>
+      <result type="text"/>
+    </command>
+
+  </suite>
+
+</dictionary>
