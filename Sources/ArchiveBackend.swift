@@ -206,21 +206,37 @@ final class ArchiveBackend: @unchecked Sendable {
         let (out, err, code) = try run(tool, ["t", archive.path])
         let lines = out.split(separator: "\n").map(String.init)
 
-        let filesLine = lines.first { $0.hasPrefix("Files:") } ?? ""
-        let okCount = filesLine.components(separatedBy: " ").compactMap { Int($0) }.first ?? 0
-        let badCount = lines.filter {
-            $0.hasPrefix("Error") || $0.contains("CRC Failed") || $0.contains("ERROR")
-        }.count
+        // 用正则取数字，比按空格切稳 —— 7-Zip 不同版本的空格数不一样
+        func number(_ key: String) -> Int {
+            for line in lines where line.hasPrefix(key) {
+                let rest = line.dropFirst(key.count)
+                let digits = rest.filter { $0.isNumber }
+                if let n = Int(digits) { return n }
+            }
+            return 0
+        }
+
+        let fileCount = number("Files:")
+        let folderCount = number("Folders:")
+        let totalCount = max(fileCount + folderCount, fileCount)
+
+        let badLines = lines.filter {
+            $0.hasPrefix("Error") || $0.contains("CRC Failed") || $0.hasPrefix("ERROR")
+        }
+        let badCount = badLines.count
         let passed = code == 0 && badCount == 0
 
         let summary = passed
-            ? "检查通过：\(okCount) 个文件校验无误"
-            : "检查失败：\(badCount) 个错误（退出码 \(code)）"
+            ? L10n.f("test.passed", "检查通过：%d 个文件、%d 个目录，全部校验无误",
+                     fileCount, folderCount)
+            : L10n.f("test.failed", "检查失败：%d 个错误", badCount)
 
         let detail = """
         \(passed ? "✅ 归档完整" : "❌ 归档存在问题")
 
-        校验文件   \(okCount) 个
+        文件       \(fileCount) 个
+        目录       \(folderCount) 个
+        合计       \(totalCount) 个条目
         错误       \(badCount) 个
         退出码     \(code)
         工具       \(tool)
