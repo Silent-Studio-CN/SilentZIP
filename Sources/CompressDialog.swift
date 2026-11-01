@@ -193,6 +193,9 @@ final class CompressDialog: NSObject {
         threadPop.selectItem(at: 0)
 
         volumeField.placeholderString = "不分卷，或填 100m / 1g"
+        extraField.placeholderString = ""
+        volumeField.widthAnchor.constraint(equalToConstant: 210).isActive = true
+        extraField.widthAnchor.constraint(equalToConstant: 210).isActive = true
 
         memoryLabel.font = .systemFont(ofSize: 11)
         memoryLabel.textColor = .secondaryLabelColor
@@ -209,10 +212,14 @@ final class CompressDialog: NSObject {
             [label("分卷大小"), volumeField],
             [label("参数"), extraField]
         ])
-        grid.columnSpacing = 12
+        grid.columnSpacing = 10
         grid.rowSpacing = 8
         grid.column(at: 0).xPlacement = .trailing
-        grid.column(at: 1).width = 200
+        grid.column(at: 0).width = 76      // 标签列固定，宽度不再随文字跳
+        grid.column(at: 1).width = 210
+        for row in 0..<grid.numberOfRows {
+            grid.row(at: row).height = 26
+        }
         grid.setContentHuggingPriority(.defaultHigh, for: .vertical)
         grid.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -356,7 +363,7 @@ final class CompressDialog: NSObject {
         // 7-Zip 的经验值：压缩约 12 倍字典，解压约 1.05 倍
         let need = Int(Double(mb) * 12)
         let free = Int(Double(totalGB) * 1024)
-        memoryLabel.stringValue = String(format: "本机 %.1f GB，压缩约需 %d MB",
+        memoryLabel.stringValue = String(format: "%.0f GB 内存 · 约需 %d MB",
                                          totalGB, need)
         memoryLabel.textColor = need > free ? .systemOrange : .secondaryLabelColor
     }
