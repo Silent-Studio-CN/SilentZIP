@@ -336,6 +336,9 @@ struct AboutView: View {
             .padding(.vertical, 12)
         }
         .frame(width: 500, height: 620)
+        .onAppear {
+            if CommandLine.arguments.contains("--terms") { showFullTerms = true }
+        }
         .sheet(isPresented: $showFullTerms) {
             FullTermsView()
         }
@@ -362,112 +365,82 @@ struct AboutView: View {
 struct FullTermsView: View {
     @Environment(\.dismiss) private var dismiss
 
+    /// 直接读 bundle 里的 LICENSE.md —— 单一来源，改文件即改全部
+    private var licenseText: String {
+        if let u = Bundle.main.url(forResource: "LICENSE", withExtension: "md"),
+           let s = try? String(contentsOf: u, encoding: .utf8) {
+            return s
+        }
+        return "许可协议文件缺失"
+    }
+
+    private var lines: [(offset: Int, text: String)] {
+        licenseText.components(separatedBy: "\n")
+            .enumerated()
+            .map { (offset: $0.offset, text: $0.element) }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("完整条款").font(.headline)
+                Text("许可协议").font(.headline)
                 Spacer()
-                Button("关闭") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("关闭") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 20).padding(.vertical, 14)
 
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("SilentZIP 私有许可协议 v1.0")
-                        .font(.headline)
-
-                    group("一、授权", """
-                    SilentStudio 授予你一项非独占、不可转让的许可，你可以：
-                    · 在本机安装并使用本软件，用于个人或商业用途，无需付费；
-                    · 分发本软件的完整未修改副本，但须附带本协议全文。
-                    """)
-
-                    group("二、限制", """
-                    你不得：
-                    · 修改、翻译、反编译、反汇编或对本软件进行反向工程；
-                    · 将本软件的源码、算法或界面设计移植、借鉴到其他项目；
-                    · 将本软件或其修改版用于销售、租赁、捆绑销售；
-                    · 移除或篡改本软件中的版权声明与许可标识；
-                    · 将其用于训练机器学习模型。
-                    """)
-
-                    group("三、第三方组件", """
-                    本软件以独立进程方式调用 7-Zip（7z）完成压缩与解压。
-                    7-Zip 版权归 Igor Pavlov 所有，依 GNU LGPL 及其附带的
-                    unRAR license restriction 发布，条款独立于本协议。
-                    """)
-
-                    group("四、免责", """
-                    本软件按现状提供，不附带任何明示或默示担保。因使用本软件
-                    造成的数据丢失、归档损坏或其他损失，SilentStudio 不承担责任。
-                    使用前请自行备份重要数据。
-                    """)
-
-                    group("五、终止", """
-                    违反本协议任一条款，授权立即自动终止，你应停止使用并删除
-                    本软件。本协议适用中华人民共和国法律。
-                    """)
-
-                    Divider().padding(.vertical, 6)
-
-                    Text("Proprietary License v1.0").font(.headline)
-
-                    group("1. Grant", """
-                    SilentStudio grants you a non-exclusive, non-transferable license
-                    to install and use this software on your own machines for personal
-                    or commercial purposes at no charge, and to distribute complete
-                    unmodified copies provided this license is included.
-                    """)
-
-                    group("2. Restrictions", """
-                    You may not modify, translate, decompile, disassemble, or reverse
-                    engineer the software; port, adapt, or transplant its source code,
-                    algorithms, or interface design into any other project; sell, rent,
-                    or bundle it; remove or alter any copyright or license notice; or
-                    use it to train machine-learning models.
-                    """)
-
-                    group("3. Third-Party Components", """
-                    7-Zip is Copyright (C) 1999-2025 Igor Pavlov and is distributed
-                    under the GNU LGPL together with the unRAR license restriction.
-                    It is invoked as a separate process and is not statically linked.
-                    """)
-
-                    group("4. Disclaimer", """
-                    THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND.
-                    SilentStudio is not liable for data loss, archive corruption, or
-                    any other damage arising from its use.
-                    """)
-
-                    group("5. Termination", """
-                    Any breach terminates this license immediately; you must stop
-                    using the software and delete all copies. This license is governed
-                    by the laws of the People's Republic of China.
-                    """)
-
-                    Text("中英文如有歧义，以中文为准。")
-                        .font(.caption).foregroundStyle(.tertiary)
-                        .padding(.top, 6)
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(lines, id: \.offset) { line in
+                        lineView(line.text)
+                    }
                 }
-                .font(.callout)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(22)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 18)
             }
         }
-        .frame(width: 620, height: 640)
+        .frame(width: 680, height: 680)
     }
 
-    private func group(_ title: String, _ body: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.callout).bold().padding(.top, 4)
-            Text(body).foregroundStyle(.secondary).textSelection(.enabled)
+    @ViewBuilder
+    private func lineView(_ raw: String) -> some View {
+        let t = raw.trimmingCharacters(in: .whitespaces)
+
+        if t.isEmpty {
+            Spacer().frame(height: 6)
+        } else if t.hasPrefix("### ") {
+            Text(t.dropFirst(4))
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 5)
+        } else if t.hasPrefix("## ") {
+            Text(t.dropFirst(3))
+                .font(.system(size: 15, weight: .semibold))
+                .padding(.top, 12).padding(.bottom, 2)
+        } else if t.hasPrefix("# ") {
+            Text(t.dropFirst(2))
+                .font(.system(size: 19, weight: .semibold))
+                .padding(.top, 14).padding(.bottom, 4)
+        } else if t.hasPrefix("---") {
+            Divider().padding(.vertical, 6)
+        } else {
+            Text(inline(t))
+                .font(.system(size: 12.5))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// 行内 **粗体** / *斜体*
+    private func inline(_ s: String) -> AttributedString {
+        (try? AttributedString(markdown: s)) ?? AttributedString(s)
     }
 }
 
-// MARK: - 信息行
 struct InfoRow: Identifiable {
     let id = UUID()
     let label: String
@@ -993,9 +966,13 @@ struct ContentView: View {
                     model.createArchive(from: [src], to: target)
                 }
             }
-            if CommandLine.arguments.contains("--about") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showAbout = true }
+            if CommandLine.arguments.contains("--about")
+                || CommandLine.arguments.contains("--terms") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    showAbout = true
+                }
             }
+
             if CommandLine.arguments.contains("--set-default") {
                 let n = ArchiveTypes.becomeDefault()
                 let msg = "becomeDefault: " + String(n) + "/" + String(ArchiveTypes.utis.count)

@@ -18,6 +18,9 @@ swiftc -swift-version 5 -O Sources/*.swift -o "$BIN" \
 if [ -f Resources/SilentZIP.icns ]; then
   cp Resources/SilentZIP.icns "$APP/Contents/Resources/SilentZIP.icns"
 fi
+if [ -f Resources/LICENSE.md ]; then
+  cp Resources/LICENSE.md "$APP/Contents/Resources/LICENSE.md"
+fi
 
 echo "编译 Finder 扩展…"
 swiftc -swift-version 5 -O FinderExt/FinderSync.swift -o "$APPEX_BIN" \
