@@ -1,6 +1,6 @@
 #!/bin/bash
 # 编译 7-Zip 引擎 —— 任何 macOS 开发者都能跑
-# 用法： ./engine/build-7zip.sh [版本号]
+# 用法： ./7z-build/build-7zip.sh [版本号]
 #        不给版本号则自动探测最新源码版本
 set -e
 cd "$(dirname "$0")/.."
@@ -29,7 +29,7 @@ if [ -z "$VER" ]; then
     VER=$(detect_version)
 fi
 if [ -z "$VER" ]; then
-    echo "无法探测版本，请手动指定：./engine/build-7zip.sh 2601"
+    echo "无法探测版本，请手动指定：./7z-build/build-7zip.sh 2601"
     exit 1
 fi
 
@@ -70,11 +70,11 @@ fi
 cd - >/dev/null
 cp "$WORK/CPP/7zip/Bundles/Alone2/_o/7zz" Resources/7zz
 chmod +x Resources/7zz
-echo "$VER" > engine/VERSION
+echo "$VER" > 7z-build/VERSION
 
 echo
 echo "完成：Resources/7zz"
 file Resources/7zz | sed "s/^/  /"
 Resources/7zz 2>&1 | head -2 | sed "s/^/  /"
 echo
-echo "版本号已写入 engine/VERSION"
+echo "版本号已写入 7z-build/VERSION"

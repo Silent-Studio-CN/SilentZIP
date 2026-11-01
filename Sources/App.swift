@@ -34,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        L10n.load()
         NSApp.activate(ignoringOtherApps: true)
         // 让系统重新扫描本 app 的 NSServices —— 否则右键菜单里看不到，
         // 用户还得手动去「系统设置 → 键盘 → 服务」勾选
@@ -887,12 +888,30 @@ final class ZipModel: ObservableObject {
         }
     }
 
+    /// 解压整个归档
+    func extractAll(to dir: URL) {
+        guard let a = archive else { return }
+        busy = true; status = "解压中…"
+        Task.detached(priority: .userInitiated) {
+            do {
+                try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir)
+                await MainActor.run {
+                    self.status = "已解压到 \(dir.lastPathComponent)"
+                    self.busy = false
+                    self.loadFS(self.fsPath)
+                }
+            } catch {
+                await MainActor.run { self.status = error.localizedDescription; self.busy = false }
+            }
+        }
+    }
+
+    /// 解压选中的条目。没选就什么都不做 —— 由界面负责提示。
     func extract(to dir: URL) {
         guard let a = archive else { return }
-        var subset = entries.filter { selection.contains($0.id) && !$0.isDirectory }.map { $0.path }
-        if subset.isEmpty { subset = [] }
+        let sub = entries.filter { selection.contains($0.id) }.map { $0.path }
+        guard !sub.isEmpty else { return }
         busy = true; status = "解压中…"
-        let sub = subset
         Task.detached(priority: .userInitiated) {
             do {
                 try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir, subset: sub)
@@ -1045,7 +1064,7 @@ final class ZipModel: ObservableObject {
 struct ContentView: View {
     @StateObject private var model = ZipModel()
     @State private var showOpen = false
-    @State private var showExtract = false
+
     @State private var showInfoSheet = false
     @State private var showAbout = false
     // 0 表示用户还没拖过 —— 此时左栏固定占一半，分隔线居中
@@ -1143,9 +1162,6 @@ struct ContentView: View {
         .fileImporter(isPresented: $showOpen, allowedContentTypes: [.data], allowsMultipleSelection: false) { r in
             if case .success(let u) = r, let f = u.first { model.open(f) }
         }
-        .fileImporter(isPresented: $showExtract, allowedContentTypes: [.folder], allowsMultipleSelection: false) { r in
-            if case .success(let u) = r, let f = u.first { model.extract(to: f) }
-        }
         .sheet(isPresented: $showAbout) {
             AboutView()
         }
@@ -1201,26 +1217,29 @@ struct ContentView: View {
 
     private var toolbar: some View {
         HStack(spacing: 4) {
-            tb("folder", "打开归档") { showOpen = true }
+            tb("folder", L10n.t("open", "打开归档")) { showOpen = true }
             tb("plus.square",
-               model.canModify ? "把选中的文件/文件夹压缩成归档" : "系统目录受保护，不能在此压缩",
+               model.canModify ? L10n.t("addFiles", "把选中的文件/文件夹压缩成归档")
+                               : L10n.t("protected", "系统目录受保护，不能在此压缩"),
                disabled: !model.canModify) { askAndCreateArchive() }
             tb("arrow.down.doc",
-               model.canModify ? "解压选中（未选则全部）" : "系统目录受保护，不能解压到此处") { showExtract = true }
+               model.canModify ? L10n.t("extract", "解压选中的文件")
+                               : L10n.t("protected", "系统目录受保护，不能解压到此处")) { askExtract() }
                 .disabled(model.archive == nil || !model.canModify)
-            tb("checkmark.shield", "测试完整性", disabled: model.archive == nil) { model.test() }
+            tb("checkmark.shield", L10n.t("test", "测试完整性"), disabled: model.archive == nil) { model.test() }
             Divider().frame(height: 18)
-            tb("doc.on.doc", "复制选中条目到归档内新路径",
+            tb("doc.on.doc", L10n.t("copy", "复制选中条目到归档内新路径"),
                disabled: model.archive == nil) { askMoveCopy(copy: true) }
-            tb("arrow.right.doc.on.clipboard", "移动/重命名选中条目",
+            tb("arrow.right.doc.on.clipboard", L10n.t("move", "移动/重命名选中条目"),
                disabled: model.archive == nil) { askMoveCopy(copy: false) }
             tb("plus.rectangle.on.folder",
-               "往当前归档里添加文件",
+               L10n.t("addToArchive", "往当前归档里添加文件"),
                disabled: model.archive == nil) { askAddToArchive() }
             tb("trash",
-               model.canModify ? "删除选中" : "系统目录受保护，不能删除",
+               model.canModify ? L10n.t("delete", "删除选中")
+                               : L10n.t("protectedDelete", "系统目录受保护，不能删除"),
                disabled: model.archive == nil || !model.canModify) { model.removeSelected() }
-            tb("info.circle", "显示归档信息", disabled: model.archive == nil) {
+            tb("info.circle", L10n.t("info", "显示归档信息"), disabled: model.archive == nil) {
                 model.showInfo(); showInfoSheet = true
             }
             Spacer(minLength: 24)
@@ -1381,7 +1400,8 @@ struct ContentView: View {
                         Button("打开") { model.openEntry(e) }
                         Button("展开嵌套归档") { model.enterEntry(e) }
                         Divider()
-                        Button("解压选中项") { showExtract = true }
+                        Button("解压选中项") { askExtract() }
+                        Button("全部解压…") { askExtractAll() }
                         Divider()
                         Button("复制到…") { askMoveCopy(copy: true) }
                         Button("移动到…") { askMoveCopy(copy: false) }
@@ -1465,6 +1485,49 @@ struct ContentView: View {
     }
 
     private func askAndCreateArchive() { askCreate(items: model.fsSelectedItems, ext: "7z") }
+
+    /// 解压按钮：有选中就解压选中，没选中就提示，不替用户做决定
+    private func askExtract() {
+        guard model.archive != nil else { return }
+
+        let picked = model.entries.filter { model.selection.contains($0.id) }
+        guard !picked.isEmpty else {
+            let a = NSAlert()
+            a.messageText = "先选一下要解压的文件"
+            a.informativeText = "在右边列表里点选条目，再点解压。\n如果想全部解压，右键菜单里有「全部解压」。"
+            a.addButton(withTitle: "知道了")
+            a.runModal()
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.title = "解压到哪里"
+        panel.prompt = "解压"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.directoryURL = model.fsPath
+        panel.begin { resp in
+            guard resp == .OK, let dir = panel.url else { return }
+            Task { @MainActor in model.extract(to: dir) }
+        }
+    }
+
+    /// 全部解压：先把整个包解出来
+    private func askExtractAll() {
+        guard model.archive != nil else { return }
+        let panel = NSOpenPanel()
+        panel.title = "全部解压到哪里"
+        panel.prompt = "解压"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.directoryURL = model.fsPath
+        panel.begin { resp in
+            guard resp == .OK, let dir = panel.url else { return }
+            Task { @MainActor in model.extractAll(to: dir) }
+        }
+    }
 
     /// 选文件，加进当前归档
     private func askAddToArchive() {

@@ -17,13 +17,13 @@ macOS 二进制拖了两年多，所以我们自己编译。
 
 ## 一条命令重新编译
 
-    ./engine/build-7zip.sh
+    ./7z-build/build-7zip.sh
 
 自动完成：探测最新源码版本 → 下载 → 解压 → 用系统 clang 编译 → 写入 Resources/7zz
 
 **指定版本**：
 
-    ./engine/build-7zip.sh 2601
+    ./7z-build/build-7zip.sh 2601
 
 **依赖**：
 
@@ -73,9 +73,9 @@ macOS 二进制拖了两年多，所以我们自己编译。
 流程：
 
 1. 7-Zip 发布新版本 → 官方下载页出现新的 src 包
-2. 运行 \`./engine/build-7zip.sh\`（不带参数，自动探测最新）
+2. 运行 \`./7z-build/build-7zip.sh\`（不带参数，自动探测最新）
 3. 验证：用样本归档跑一遍 列表 / 压缩 / 解压 / 完整性测试
-4. 更新 \`engine/VERSION\`
+4. 更新 \`7z-build/VERSION\`
 5. 提交并发布新版本 SilentZIP
 
 **判断依据**：官方源码包日期，不是 Windows 二进制版本号。

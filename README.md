@@ -114,7 +114,7 @@ SilentZIP 自身采用私有许可协议，见 [LICENSE.md](Resources/LICENSE.md
     │   ├── LICENSE.md           项目许可协议
     │   ├── THIRD-PARTY-7zip.txt 7-Zip 原始许可（未修改）
     │   └── COPYING.LGPL-2.1.txt LGPL 2.1 全文
-    ├── engine/               引擎构建（给其他开发者）
+    ├── 7z-build/               引擎构建（给其他开发者）
     │   ├── build-7zip.sh        一条命令重新编译
     │   ├── README.md            编译说明与版本策略
     │   └── VERSION              当前引擎版本
@@ -130,14 +130,14 @@ SilentZIP 自身采用私有许可协议，见 [LICENSE.md](Resources/LICENSE.md
 
 7-Zip 发布新源码后，升级：
 
-    ./engine/build-7zip.sh
+    ./7z-build/build-7zip.sh
 
 脚本会自动探测官方最新的源码版本、下载、编译、替换 Resources/7zz。
 
 **判断依据是官方源码包的日期，不是 Windows 二进制版本号**，两者经常不同步。
 例如 26.05 只有 Windows 版，源码最新仍是 26.05。
 
-详细说明见 [engine/README.md](engine/README.md)。
+详细说明见 [7z-build/README.md](7z-build/README.md)。
 
 ---
 
@@ -155,7 +155,7 @@ SilentZIP 自身采用私有许可协议，见 [LICENSE.md](Resources/LICENSE.md
 ## 相关文档
 
 - [安装包需求](docs/安装包需求.md) —— DMG 方案、自动注册机制、验证清单
-- [引擎说明](engine/README.md) —— 7-Zip 编译方法与版本策略
+- [引擎说明](7z-build/README.md) —— 7-Zip 编译方法与版本策略
 - [许可协议](Resources/LICENSE.md) —— 中英双语完整条款
 
 ---
