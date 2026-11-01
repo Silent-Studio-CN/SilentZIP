@@ -86,7 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 await MainActor.run {
                     let a = NSAlert()
-                    a.messageText = "解压失败"
+                    a.messageText = L10n.t("error.extractFailed", "解压失败")
                     a.informativeText = error.localizedDescription
                     a.runModal()
                 }
@@ -197,9 +197,9 @@ func looksLikeBundle(_ url: URL) -> Bool {
 /// 系统本地化的类型名（中文环境下自动是「应用程序」「压缩包」等）
 func typeName(_ url: URL) -> String {
     let ext = url.pathExtension.lowercased()
-    if ext.isEmpty { return "文件夹" }
-    if ext == "app" { return "应用程序" }
-    if ext == "framework" { return "框架" }
+    if ext.isEmpty { return L10n.t("type.folder", "文件夹") }
+    if ext == "app" { return L10n.t("type.app", "应用程序") }
+    if ext == "framework" { return L10n.t("type.framework", "框架") }
     if let t = UTType(filenameExtension: ext),
        let d = t.localizedDescription, !d.isEmpty {
         return d
@@ -224,7 +224,7 @@ enum CLITool {
         // 已存在就先删（可能是旧链接）
         if fm.fileExists(atPath: target.path) {
             if (try? fm.destinationOfSymbolicLink(atPath: target.path)) == nil {
-                alert("安装失败", "/usr/local/bin/sz 已存在且不是软链，请手动处理。")
+                alert(L10n.t("error.installFailed", "安装失败"), "/usr/local/bin/sz 已存在且不是软链，请手动处理。")
                 return
             }
             try? fm.removeItem(at: target)
@@ -234,7 +234,7 @@ enum CLITool {
             try fm.createSymbolicLink(at: target, withDestinationURL: sz)
             alert("已安装", "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
         } catch {
-            alert("安装失败", """
+            alert(L10n.t("error.installFailed", "安装失败"), """
             没有权限写入 /usr/local/bin。
 
             可以手动执行：
@@ -345,7 +345,7 @@ struct AboutView: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 8) {
-                            Text("私有许可协议").font(.headline)
+                            Text(L10n.t("about.privateLicense", "私有许可协议")).font(.headline)
                             Text("v1.0")
                                 .font(.caption2)
                                 .padding(.horizontal, 6).padding(.vertical, 2)
@@ -367,19 +367,19 @@ struct AboutView: View {
                     Button {
                         showFullTerms = true
                     } label: {
-                        Label("查看完整条款", systemImage: "doc.text")
+                        Label(L10n.t("terms.viewFull", "查看完整条款"), systemImage: "doc.text")
                     }
                     .controlSize(.large)
 
                     Divider().padding(.vertical, 2)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("技术").font(.headline)
+                        Text(L10n.t("about.tech", "技术")).font(.headline)
 
-                        techRow("界面", "SwiftUI + AppKit")
-                        techRow("归档引擎", "7-Zip（p7zip 17.05）")
-                        techRow("引擎版权", "© 1999-2025 Igor Pavlov")
-                        techRow("引擎许可", "GNU LGPL · unRAR restriction")
+                        techRow(L10n.t("about.ui", "界面"), "SwiftUI + AppKit")
+                        techRow(L10n.t("about.engine", "归档引擎"), "7-Zip（p7zip 17.05）")
+                        techRow(L10n.t("about.engineCopyright", "引擎版权"), "© 1999-2025 Igor Pavlov")
+                        techRow(L10n.t("about.engineLicense", "引擎许可"), "GNU LGPL · unRAR restriction")
 
                         Text("7-Zip 以独立进程方式调用，不静态链接。其版权与许可归原作者，独立于本协议。")
                             .font(.caption).foregroundStyle(.tertiary)
@@ -395,7 +395,7 @@ struct AboutView: View {
 
             HStack {
                 Spacer()
-                Button("好") { dismiss() }
+                Button(L10n.t("ui.ok", "好")) { dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .controlSize(.large)
             }
@@ -459,9 +459,9 @@ struct FullTermsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("许可协议").font(.headline)
+                Text(L10n.t("terms.title", "许可协议")).font(.headline)
                 Spacer()
-                Button("关闭") { dismiss() }
+                Button(L10n.t("ui.close", "关闭")) { dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 10)
@@ -576,9 +576,9 @@ struct FSEntry: Identifiable, Hashable {
     }
     var isBundle: Bool { looksLikeBundle(url) }
     var typeLabel: String {
-        if isLink { return "符号链接" }
+        if isLink { return L10n.t("type.symlink", "符号链接") }
         if isBundle { return typeName(url) }
-        return isDir ? "文件夹" : typeName(url)
+        return isDir ? L10n.t("type.folder", "文件夹") : typeName(url)
     }
 
     var sizeText: String {
@@ -618,17 +618,17 @@ final class ZipModel: ObservableObject {
     /// 常见目录显示中文，其余原样
     private func friendlyName(_ s: String) -> String {
         switch s {
-        case "Users": return "用户"
-        case "Desktop": return "桌面"
-        case "Downloads": return "下载"
-        case "Documents": return "文稿"
-        case "Movies": return "影片"
-        case "Music": return "音乐"
-        case "Pictures": return "图片"
-        case "Library": return "资源库"
-        case "Applications": return "应用程序"
-        case "System": return "系统"
-        case "Volumes": return "宗卷"
+        case "Users": return L10n.t("path.users", "用户")
+        case "Desktop": return L10n.t("path.desktop", "桌面")
+        case "Downloads": return L10n.t("path.downloads", "下载")
+        case "Documents": return L10n.t("path.documents", "文稿")
+        case "Movies": return L10n.t("path.movies", "影片")
+        case "Music": return L10n.t("path.music", "音乐")
+        case "Pictures": return L10n.t("path.pictures", "图片")
+        case "Library": return L10n.t("path.library", "资源库")
+        case "Applications": return L10n.t("type.app", "应用程序")
+        case "System": return L10n.t("path.system", "系统")
+        case "Volumes": return L10n.t("path.volumes", "宗卷")
         default: return s
         }
     }
@@ -642,7 +642,7 @@ final class ZipModel: ObservableObject {
 
     /// 把选中的文件/文件夹压缩成新归档
     func createArchive(from items: [URL], to target: URL) {
-        guard !items.isEmpty else { status = "先在左边选中要压缩的内容"; return }
+        guard !items.isEmpty else { status = L10n.t("hint.selectToCompress", "先在左边选中要压缩的内容"); return }
         busy = true
         status = "压缩中…（\(items.count) 项）"
 
@@ -678,7 +678,7 @@ final class ZipModel: ObservableObject {
 
     /// 当前目录为什么不能改
     var lockedReason: String? {
-        canModify ? nil : "系统目录受保护，不能写入或压缩"
+        canModify ? nil : L10n.t("lock.protected", "系统目录受保护，不能写入或压缩")
     }
 
     // 归档（右栏）
@@ -686,7 +686,7 @@ final class ZipModel: ObservableObject {
     @Published var entries: [ArchiveEntry] = []
     @Published var currentPath: String = ""
     @Published var selection: Set<UUID> = []
-    @Published var status: String = "选择一个归档文件，或拖进来"
+    @Published var status: String = L10n.t("status.noArchive", "选择一个归档文件，或拖进来")
     @Published var busy = false
     @Published var infoText: String = ""
     @Published var infoRows: [InfoRow] = []
@@ -799,7 +799,7 @@ final class ZipModel: ObservableObject {
 
     // MARK: 归档
     func open(_ url: URL, fallbackToSystem: Bool = false) {
-        busy = true; status = "读取中…"; archive = url; entries = []; currentPath = ""
+        busy = true; status = L10n.t("status.reading", "读取中…"); archive = url; entries = []; currentPath = ""
         let path = url.path
         Task.detached(priority: .userInitiated) {
             do {
@@ -828,7 +828,7 @@ final class ZipModel: ObservableObject {
                     } else {
                         self.archive = nil
                         self.entries = []
-                        self.status = "打不开：" + error.localizedDescription
+                        self.status = L10n.t("error.cannotOpen", "打不开：") + error.localizedDescription
                     }
                 }
             }
@@ -882,7 +882,7 @@ final class ZipModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.status = "打开失败：" + error.localizedDescription
+                    self.status = L10n.t("error.openFailed", "打开失败：") + error.localizedDescription
                 }
             }
         }
@@ -891,7 +891,7 @@ final class ZipModel: ObservableObject {
     /// 解压整个归档
     func extractAll(to dir: URL) {
         guard let a = archive else { return }
-        busy = true; status = "解压中…"
+        busy = true; status = L10n.t("status.extracting", "解压中…")
         Task.detached(priority: .userInitiated) {
             do {
                 try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir)
@@ -911,7 +911,7 @@ final class ZipModel: ObservableObject {
         guard let a = archive else { return }
         let sub = entries.filter { selection.contains($0.id) }.map { $0.path }
         guard !sub.isEmpty else { return }
-        busy = true; status = "解压中…"
+        busy = true; status = L10n.t("status.extracting", "解压中…")
         Task.detached(priority: .userInitiated) {
             do {
                 try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir, subset: sub)
@@ -928,7 +928,7 @@ final class ZipModel: ObservableObject {
 
     func test() {
         guard let a = archive else { return }
-        busy = true; status = "检查中…"
+        busy = true; status = L10n.t("status.testing", "检查中…")
         Task.detached(priority: .userInitiated) {
             do {
                 let r = try ArchiveBackend.shared.testDetailed(URL(fileURLWithPath: a.path))
@@ -947,7 +947,7 @@ final class ZipModel: ObservableObject {
     func addToArchive(_ urls: [URL]) {
         guard let a = archive, !urls.isEmpty else { return }
         busy = true
-        status = "添加中…"
+        status = L10n.t("status.adding", "添加中…")
         Task.detached(priority: .userInitiated) {
             do {
                 try ArchiveBackend.shared.add(URL(fileURLWithPath: a.path), files: urls)
@@ -959,7 +959,7 @@ final class ZipModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.status = "添加失败：" + error.localizedDescription
+                    self.status = L10n.t("error.addFailed", "添加失败：") + error.localizedDescription
                     self.busy = false
                 }
             }
@@ -980,7 +980,7 @@ final class ZipModel: ObservableObject {
     func moveOrCopy(from: String, to: String, copy: Bool) {
         guard let a = archive else { return }
         busy = true
-        status = copy ? "复制中…" : "移动中…"
+        status = copy ? L10n.t("status.copying", "复制中…") : L10n.t("status.moving", "移动中…")
         Task.detached(priority: .userInitiated) {
             do {
                 if copy {
@@ -997,7 +997,7 @@ final class ZipModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.status = "失败：" + error.localizedDescription
+                    self.status = L10n.t("error.generic", "失败：") + error.localizedDescription
                     self.busy = false
                 }
             }
@@ -1010,7 +1010,7 @@ final class ZipModel: ObservableObject {
         NSWorkspace.shared.recycle(urls) { _, error in
             Task { @MainActor in
                 if let error {
-                    self.status = "删除失败：" + error.localizedDescription
+                    self.status = L10n.t("error.deleteFailed", "删除失败：") + error.localizedDescription
                 } else {
                     self.status = "已移到废纸篓（\(urls.count) 项）"
                     self.loadFS(self.fsPath)
@@ -1028,21 +1028,21 @@ final class ZipModel: ObservableObject {
         let packed = entries.filter { !$0.isDirectory }.reduce(Int64(0)) { $0 + $1.packedSize }
         let ratio = raw > 0 ? Double(packed) / Double(raw) * 100 : 0
         infoRows = [
-            InfoRow(label: "文件", value: a.lastPathComponent),
-            InfoRow(label: "归档大小", value: ByteCountFormatter.string(fromByteCount: size, countStyle: .file)),
-            InfoRow(label: "条目", value: "\(entries.count) 个（\(dirs) 目录 / \(files) 文件）"),
-            InfoRow(label: "原始大小", value: ByteCountFormatter.string(fromByteCount: raw, countStyle: .file)),
-            InfoRow(label: "压缩后", value: ByteCountFormatter.string(fromByteCount: packed, countStyle: .file)),
-            InfoRow(label: "压缩率", value: String(format: "%.1f%%", ratio))
+            InfoRow(label: L10n.t("info.file", "文件"), value: a.lastPathComponent),
+            InfoRow(label: L10n.t("info.archiveSize", "归档大小"), value: ByteCountFormatter.string(fromByteCount: size, countStyle: .file)),
+            InfoRow(label: L10n.t("info.entries", "条目"), value: "\(entries.count) 个（\(dirs) 目录 / \(files) 文件）"),
+            InfoRow(label: L10n.t("info.rawSize", "原始大小"), value: ByteCountFormatter.string(fromByteCount: raw, countStyle: .file)),
+            InfoRow(label: L10n.t("col.packed", "压缩后"), value: ByteCountFormatter.string(fromByteCount: packed, countStyle: .file)),
+            InfoRow(label: L10n.t("info.ratio", "压缩率"), value: String(format: "%.1f%%", ratio))
         ]
-        status = "归档信息"
+        status = L10n.t("info.title", "归档信息")
     }
 
     func removeSelected() {
         guard let a = archive else { return }
         let sub = entries.filter { selection.contains($0.id) }.map { $0.path }
-        if sub.isEmpty { status = "先选中要删除的条目"; return }
-        busy = true; status = "删除中…"
+        if sub.isEmpty { status = L10n.t("hint.selectToDelete", "先选中要删除的条目"); return }
+        busy = true; status = L10n.t("status.deleting", "删除中…")
         Task.detached(priority: .userInitiated) {
             do {
                 try ArchiveBackend.shared.remove(URL(fileURLWithPath: a.path), items: sub)
@@ -1170,7 +1170,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showInfoSheet) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("归档信息").font(.headline)
+                Text(L10n.t("info.title", "归档信息")).font(.headline)
 
                 // 两列：标签列固定靠左，值列也靠左，各自对齐
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 10) {
@@ -1199,7 +1199,7 @@ struct ContentView: View {
 
                 HStack {
                     Spacer()
-                    Button("关闭") { showInfoSheet = false }
+                    Button(L10n.t("ui.close", "关闭")) { showInfoSheet = false }
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -1220,11 +1220,11 @@ struct ContentView: View {
             tb("folder", L10n.t("open", "打开归档")) { showOpen = true }
             tb("plus.square",
                model.canModify ? L10n.t("addFiles", "把选中的文件/文件夹压缩成归档")
-                               : L10n.t("protected", "系统目录受保护，不能在此压缩"),
+                               : L10n.t("protected", L10n.t("lock.protectedCompress", "系统目录受保护，不能在此压缩")),
                disabled: !model.canModify) { askAndCreateArchive() }
             tb("arrow.down.doc",
                model.canModify ? L10n.t("extract", "解压选中的文件")
-                               : L10n.t("protected", "系统目录受保护，不能解压到此处")) { askExtract() }
+                               : L10n.t("protected", L10n.t("lock.protectedExtract", "系统目录受保护，不能解压到此处"))) { askExtract() }
                 .disabled(model.archive == nil || !model.canModify)
             tb("checkmark.shield", L10n.t("test", "测试完整性"), disabled: model.archive == nil) { model.test() }
             Divider().frame(height: 18)
@@ -1246,9 +1246,9 @@ struct ContentView: View {
 
             // 右侧：常用位置导航
             HStack(spacing: 2) {
-                quickPlace("桌面", "desktopcomputer", .desktopDirectory)
-                quickPlace("下载", "arrow.down.circle", .downloadsDirectory)
-                quickPlace("文稿", "doc.text", .documentDirectory)
+                quickPlace(L10n.t("path.desktop", "桌面"), "desktopcomputer", .desktopDirectory)
+                quickPlace(L10n.t("path.downloads", "下载"), "arrow.down.circle", .downloadsDirectory)
+                quickPlace(L10n.t("path.documents", "文稿"), "doc.text", .documentDirectory)
                 quickPlace("主目录", "house", nil)
                 quickPlace("根目录", "externaldrive", nil, forced: "/")
             }
@@ -1304,7 +1304,7 @@ struct ContentView: View {
 
             // 和右栏一样的表格：单击就进入，不用双击
             Table(model.fsItems, selection: $model.fsSelected) {
-                TableColumn("名称") { e in
+                TableColumn(L10n.t("col.name", "名称")) { e in
                     HStack(spacing: 6) {
                         Image(nsImage: e.icon)
                             .resizable()
@@ -1337,14 +1337,14 @@ struct ContentView: View {
                     }
                     .help(e.url.path)
                 }
-                TableColumn("类型") { e in
+                TableColumn(L10n.t("col.type", "类型")) { e in
                     Text(e.typeLabel).foregroundStyle(.secondary).font(.caption)
                 }.width(90)
-                TableColumn("大小") { e in
+                TableColumn(L10n.t("col.size", "大小")) { e in
                     Text(e.sizeText).foregroundStyle(.secondary)
                         .monospacedDigit().font(.caption)
                 }.width(75)
-                TableColumn("修改") { e in
+                TableColumn(L10n.t("col.modified", "修改")) { e in
                     Text(e.dateText).foregroundStyle(.secondary).font(.caption)
                 }.width(100)
             }
@@ -1369,7 +1369,7 @@ struct ContentView: View {
             .padding(.horizontal, 8).padding(.vertical, 5)
             Divider()
             Table(model.visible, selection: $model.selection) {
-                TableColumn("名称") { e in
+                TableColumn(L10n.t("col.name", "名称")) { e in
                     HStack(spacing: 6) {
                         Image(systemName: e.isDirectory ? "folder" : "doc")
                             .foregroundStyle(e.isDirectory ? Color.accentColor : .secondary)
@@ -1415,11 +1415,11 @@ struct ContentView: View {
                         }
                     }
                 }
-                TableColumn("大小") { e in
+                TableColumn(L10n.t("col.size", "大小")) { e in
                     Text(e.isDirectory ? "—" : ByteCountFormatter.string(fromByteCount: e.size, countStyle: .file))
                         .foregroundStyle(.secondary).monospacedDigit()
                 }.width(90)
-                TableColumn("压缩后") { e in
+                TableColumn(L10n.t("col.packed", "压缩后")) { e in
                     Text(e.isDirectory ? "—" : ByteCountFormatter.string(fromByteCount: e.packedSize, countStyle: .file))
                         .foregroundStyle(.secondary).monospacedDigit()
                 }.width(90)
@@ -1470,8 +1470,8 @@ struct ContentView: View {
         let alert = NSAlert()
         alert.messageText = copy ? "复制到（归档内路径）" : "移动到（归档内路径）"
         alert.informativeText = "例如 dir/newname.txt —— 只改归档内部结构，不动磁盘"
-        alert.addButton(withTitle: "确定")
-        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: L10n.t("ui.confirm", "确定"))
+        alert.addButton(withTitle: L10n.t("ui.cancel", "取消"))
 
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 380, height: 24))
         field.stringValue = first.path
@@ -1495,7 +1495,7 @@ struct ContentView: View {
             let a = NSAlert()
             a.messageText = "先选一下要解压的文件"
             a.informativeText = "在右边列表里点选条目，再点解压。\n如果想全部解压，右键菜单里有「全部解压」。"
-            a.addButton(withTitle: "知道了")
+            a.addButton(withTitle: L10n.t("ui.gotIt", "知道了"))
             a.runModal()
             return
         }
