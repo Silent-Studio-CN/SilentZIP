@@ -174,6 +174,49 @@ func typeName(_ url: URL) -> String {
     return ext.uppercased() + " 文件"
 }
 
+// MARK: - 把自己注册成默认压缩工具
+enum ArchiveTypes {
+    static let utis: [String] = [
+        "org.7-zip.7-zip-archive",
+        "public.zip-archive",
+        "com.rarlab.rar-archive",
+        "public.tar-archive",
+        "org.gnu.gnu-zip-archive",
+        "org.gnu.gnu-zip-tar-archive",
+        "public.bzip2-archive",
+        "org.tukaani.xz-archive",
+        "cn.silentstudio.archive.zst",
+        "cn.silentstudio.archive.lzh",
+        "com.microsoft.cab"
+    ]
+
+    static var bundleID: CFString { "cn.silentstudio.silentzip" as CFString }
+
+    /// 让本 app 成为所有归档格式的默认打开方式。
+    /// 需要用户主动触发 —— 系统会忽略无交互的静默设置。
+    @discardableResult
+    static func becomeDefault() -> Int {
+        var changed = 0
+        for u in utis {
+            for role: LSRolesMask in [.viewer, .editor, .shell] {
+                _ = LSSetDefaultRoleHandlerForContentType(u as CFString, role, bundleID)
+            }
+            let cur = LSCopyDefaultRoleHandlerForContentType(u as CFString, .viewer)?
+                .takeRetainedValue() as String? ?? ""
+            if cur == "cn.silentstudio.silentzip" { changed += 1 }
+        }
+        return changed
+    }
+
+    /// 当前有多少格式已经指向我们
+    static func currentCount() -> Int {
+        utis.filter {
+            (LSCopyDefaultRoleHandlerForContentType($0 as CFString, .viewer)?
+                .takeRetainedValue() as String?) == "cn.silentstudio.silentzip"
+        }.count
+    }
+}
+
 // MARK: - 受保护路径
 // 这些目录照常显示（用户有权看），但禁止压缩、写入、删除 ——
 // 在应用层提前拦住，比让 7z 写到一半报错体验好，也避免半截文件。
@@ -943,6 +986,13 @@ struct ContentView: View {
             if CommandLine.arguments.contains("--about") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showAbout = true }
             }
+            if CommandLine.arguments.contains("--set-default") {
+                let n = ArchiveTypes.becomeDefault()
+                let msg = "becomeDefault: " + String(n) + "/" + String(ArchiveTypes.utis.count)
+                try? msg.write(toFile: "/tmp/silentzip-default.log",
+                               atomically: true, encoding: .utf8)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.terminate(nil) }
+            }
             // 调试用：--info 启动后自动弹信息窗
             if CommandLine.arguments.contains("--info") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -1360,6 +1410,12 @@ struct SilentZIPApp: App {
                 Button("关于 SilentZIP") {
                     AboutBus.shared.open = true
                     NSApp.activate(ignoringOtherApps: true)
+                }
+            }
+            CommandGroup(after: .appInfo) {
+                Divider()
+                Button("设为默认压缩工具") {
+                    ArchiveTypes.becomeDefault()
                 }
             }
         }
