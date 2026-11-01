@@ -76,4 +76,9 @@ enum L10n {
         if let v = table[key], !v.isEmpty { return v }
         return fallback
     }
+
+    /// 带参数的版本。翻译文件里用 %@ 占位。
+    static func f(_ key: String, _ fallback: String, _ args: CVarArg...) -> String {
+        String(format: t(key, fallback), arguments: args)
+    }
 }

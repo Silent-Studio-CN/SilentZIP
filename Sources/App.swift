@@ -214,7 +214,7 @@ enum CLITool {
         guard let exe = Bundle.main.executableURL else { return }
         let sz = exe.deletingLastPathComponent().appendingPathComponent("sz")
         guard FileManager.default.isExecutableFile(atPath: sz.path) else {
-            alert("命令行工具缺失", "app 里没找到 sz，可能这次构建没编进去。")
+            alert(L10n.t("cli.missingTitle", "命令行工具缺失"), "app 里没找到 sz，可能这次构建没编进去。")
             return
         }
 
@@ -232,7 +232,7 @@ enum CLITool {
 
         do {
             try fm.createSymbolicLink(at: target, withDestinationURL: sz)
-            alert("已安装", "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
+            alert(L10n.t("cli.installedTitle", "已安装"), "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
         } catch {
             alert(L10n.t("error.installFailed", "安装失败"), """
             没有权限写入 /usr/local/bin。
@@ -329,8 +329,8 @@ struct AboutView: View {
 
                 Text("SilentZIP")
                     .font(.system(size: 23, weight: .semibold))
-                Text("版本 " + version).font(.callout).foregroundStyle(.secondary)
-                Text("macOS 归档管理器").font(.callout).foregroundStyle(.secondary)
+                Text(L10n.t("about.version", "版本 ") + version).font(.callout).foregroundStyle(.secondary)
+                Text(L10n.t("about.tagline", "macOS 归档管理器")).font(.callout).foregroundStyle(.secondary)
             }
             .padding(.top, 20)
             .padding(.bottom, 14)
@@ -353,13 +353,13 @@ struct AboutView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
 
-                        Text("允许：免费使用（个人与商业）、分发未修改的副本。")
-                        Text("禁止：修改、反向工程、把源码或算法移植到其他项目、转售。")
+                        Text(L10n.t("about.licenseAllow", "允许：免费使用（个人与商业）、分发未修改的副本。"))
+                        Text(L10n.t("about.licenseDeny", "禁止：修改、反向工程、把源码或算法移植到其他项目、转售。"))
                         Text("")
                         Text("Proprietary License").font(.headline)
                         Text("Permitted: free use (personal and commercial), distribution of unmodified copies.")
                         Text("Prohibited: modification, reverse engineering, porting into other projects, resale.")
-                        Text("中英文如有歧义，以中文为准。")
+                        Text(L10n.t("about.licensePrecedence", "中英文如有歧义，以中文为准。"))
                             .font(.caption).foregroundStyle(.tertiary)
                     }
                     .font(.callout)
@@ -381,7 +381,7 @@ struct AboutView: View {
                         techRow(L10n.t("about.engineCopyright", "引擎版权"), "© 1999-2025 Igor Pavlov")
                         techRow(L10n.t("about.engineLicense", "引擎许可"), "GNU LGPL · unRAR restriction")
 
-                        Text("7-Zip 以独立进程方式调用，不静态链接。其版权与许可归原作者，独立于本协议。")
+                        Text(L10n.t("about.engineNote", "7-Zip 以独立进程方式调用，不静态链接。其版权与许可归原作者，独立于本协议。"))
                             .font(.caption).foregroundStyle(.tertiary)
                             .padding(.top, 2)
                     }
@@ -434,8 +434,8 @@ struct FullTermsView: View {
     @State private var tab: Int = 0
 
     private let files = [
-        ("SilentZIP 协议", "LICENSE"),
-        ("7-Zip 许可", "THIRD-PARTY-7zip"),
+        (L10n.t("terms.tabApp", "SilentZIP 协议"), "LICENSE"),
+        (L10n.t("terms.tab7zip", "7-Zip 许可"), "THIRD-PARTY-7zip"),
         ("LGPL 2.1", "COPYING.LGPL-2.1")
     ]
 
@@ -447,7 +447,7 @@ struct FullTermsView: View {
                 return s
             }
         }
-        return "许可文件缺失：" + name
+        return L10n.t("terms.fileMissing", "许可文件缺失：") + name
     }
 
     private var lines: [(offset: Int, text: String)] {
@@ -493,7 +493,7 @@ struct FullTermsView: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.seal")
                     .foregroundStyle(.secondary)
-                Text("第三方许可取自官方源，原样收录，未作修改")
+                Text(L10n.t("terms.thirdPartyNote", "第三方许可取自官方源，原样收录，未作修改"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -644,7 +644,7 @@ final class ZipModel: ObservableObject {
     func createArchive(from items: [URL], to target: URL) {
         guard !items.isEmpty else { status = L10n.t("hint.selectToCompress", "先在左边选中要压缩的内容"); return }
         busy = true
-        status = "压缩中…（\(items.count) 项）"
+        status = L10n.f("status.compressingCount", "压缩中…（%d 项）", items.count)
 
         let fmt: String = {
             let e = target.pathExtension.lowercased()
@@ -660,13 +660,13 @@ final class ZipModel: ObservableObject {
                     self.entries = list
                     self.currentPath = ""
                     self.selection = []
-                    self.status = "已创建 \(target.lastPathComponent)（\(list.count) 个条目）"
+                    self.status = L10n.f("status.created", "已创建 %@（%d 个条目）", target.lastPathComponent, list.count)
                     self.busy = false
                     self.loadFS(self.fsPath)
                 }
             } catch {
                 await MainActor.run {
-                    self.status = "压缩失败：\(error.localizedDescription)"
+                    self.status = L10n.f("error.compressFailed", "压缩失败：%@", error.localizedDescription)
                     self.busy = false
                 }
             }
@@ -727,7 +727,7 @@ final class ZipModel: ObservableObject {
                 options: [])
             .filter { !$0.lastPathComponent.hasPrefix(".") }
         } catch {
-            status = "无法读取 \(url.lastPathComponent)：\(error.localizedDescription)"
+            status = L10n.f("error.cannotRead", "无法读取 %@：%@", url.lastPathComponent, error.localizedDescription)
         }
         fsItems = list.map { u in
             let v = try? u.resourceValues(forKeys: keys)
@@ -775,7 +775,7 @@ final class ZipModel: ObservableObject {
 
     func enter(_ e: FSEntry) {
         // 符号链接不追进去，避免循环
-        if e.isLink { status = "\(e.name) 是符号链接"; return }
+        if e.isLink { status = L10n.f("status.isSymlink", "%@ 是符号链接", e.name); return }
 
         // 普通文件夹 → 左边导航（这才是「文件资源管理器」）
         // .app / .framework 这类包磁盘上是目录，但语义是「一个整体」，
@@ -785,7 +785,7 @@ final class ZipModel: ObservableObject {
         // 明显不是归档的（图片/音视频/文本…）直接交回系统
         guard canTryAsArchive(e.url) else {
             NSWorkspace.shared.open(e.url)
-            status = "已用系统程序打开 \(e.name)"
+            status = L10n.f("status.openedWithSystem", "已用系统程序打开 %@", e.name)
             return
         }
 
@@ -813,7 +813,7 @@ final class ZipModel: ObservableObject {
                     : try ArchiveBackend.shared.list(URL(fileURLWithPath: path))
                 await MainActor.run {
                     self.entries = list
-                    self.status = "\(list.count) 个条目"
+                    self.status = L10n.f("status.entryCount", "%d 个条目", list.count)
                     self.busy = false
                 }
             } catch {
@@ -824,7 +824,7 @@ final class ZipModel: ObservableObject {
                         self.archive = nil
                         self.entries = []
                         NSWorkspace.shared.open(URL(fileURLWithPath: path))
-                        self.status = "已用系统默认程序打开 \(url.lastPathComponent)"
+                        self.status = L10n.f("status.openedDefault", "已用系统默认程序打开 %@", url.lastPathComponent)
                     } else {
                         self.archive = nil
                         self.entries = []
@@ -846,14 +846,14 @@ final class ZipModel: ObservableObject {
         guard let a = archive else { return }
 
         busy = true
-        status = "展开 \(e.name)…"
+        status = L10n.f("status.expanding", "展开 %@…", e.name)
         Task.detached(priority: .userInitiated) {
             do {
                 let f = try ArchiveBackend.shared.extractEntry(a, path: e.path)
                 let list = try ArchiveBackend.shared.list(f)
                 await MainActor.run {
                     self.busy = false
-                    self.status = "嵌套：\(e.name)（\(list.count) 个条目）"
+                    self.status = L10n.f("status.nested", "嵌套：%@（%d 个条目）", e.name, list.count)
                     self.archive = f
                     self.entries = list
                     self.currentPath = ""
@@ -872,13 +872,13 @@ final class ZipModel: ObservableObject {
     /// 临时目录在 app 退出时整体删除。
     func openEntry(_ e: ArchiveEntry) {
         guard let a = archive else { return }
-        status = "正在打开 \(e.name)…"
+        status = L10n.f("status.opening", "正在打开 %@…", e.name)
         Task.detached(priority: .userInitiated) {
             do {
                 let f = try ArchiveBackend.shared.extractEntry(a, path: e.path)
                 await MainActor.run {
                     NSWorkspace.shared.open(f)
-                    self.status = "已打开 \(e.name)"
+                    self.status = L10n.f("status.opened", "已打开 %@", e.name)
                 }
             } catch {
                 await MainActor.run {
@@ -896,7 +896,7 @@ final class ZipModel: ObservableObject {
             do {
                 try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir)
                 await MainActor.run {
-                    self.status = "已解压到 \(dir.lastPathComponent)"
+                    self.status = L10n.f("status.extractedTo", "已解压到 %@", dir.lastPathComponent)
                     self.busy = false
                     self.loadFS(self.fsPath)
                 }
@@ -916,7 +916,7 @@ final class ZipModel: ObservableObject {
             do {
                 try ArchiveBackend.shared.extract(URL(fileURLWithPath: a.path), to: dir, subset: sub)
                 await MainActor.run {
-                    self.status = "已解压到 \(dir.lastPathComponent)"
+                    self.status = L10n.f("status.extractedTo", "已解压到 %@", dir.lastPathComponent)
                     self.busy = false
                     self.loadFS(self.fsPath)
                 }
@@ -938,7 +938,7 @@ final class ZipModel: ObservableObject {
                     self.busy = false
                 }
             } catch {
-                await MainActor.run { self.status = "检查失败：\(error.localizedDescription)"; self.busy = false }
+                await MainActor.run { self.status = L10n.f("error.testFailed", "检查失败：%@", error.localizedDescription); self.busy = false }
             }
         }
     }
@@ -954,7 +954,7 @@ final class ZipModel: ObservableObject {
                 let list = try ArchiveBackend.shared.list(URL(fileURLWithPath: a.path))
                 await MainActor.run {
                     self.entries = list
-                    self.status = "已添加 \(urls.count) 项"
+                    self.status = L10n.f("status.addedCount", "已添加 %d 项", urls.count)
                     self.busy = false
                 }
             } catch {
@@ -1012,7 +1012,7 @@ final class ZipModel: ObservableObject {
                 if let error {
                     self.status = L10n.t("error.deleteFailed", "删除失败：") + error.localizedDescription
                 } else {
-                    self.status = "已移到废纸篓（\(urls.count) 项）"
+                    self.status = L10n.f("status.trashed", "已移到废纸篓（%d 项）", urls.count)
                     self.loadFS(self.fsPath)
                 }
             }
@@ -1050,7 +1050,7 @@ final class ZipModel: ObservableObject {
                 await MainActor.run {
                     self.entries = list
                     self.selection = []
-                    self.status = "已删除 \(sub.count) 项"
+                    self.status = L10n.f("status.deletedCount", "已删除 %d 项", sub.count)
                     self.busy = false
                 }
             } catch {
@@ -1226,7 +1226,7 @@ struct ContentView: View {
                model.canModify ? L10n.t("extract", "解压选中的文件")
                                : L10n.t("protected", L10n.t("lock.protectedExtract", "系统目录受保护，不能解压到此处"))) { askExtract() }
                 .disabled(model.archive == nil || !model.canModify)
-            tb("checkmark.shield", L10n.t("test", "测试完整性"), disabled: model.archive == nil) { model.test() }
+            tb("checkmark.shield", L10n.t("test", L10n.t("ctx.test", "测试完整性")), disabled: model.archive == nil) { model.test() }
             Divider().frame(height: 18)
             tb("doc.on.doc", L10n.t("copy", "复制选中条目到归档内新路径"),
                disabled: model.archive == nil) { askMoveCopy(copy: true) }
@@ -1239,7 +1239,7 @@ struct ContentView: View {
                model.canModify ? L10n.t("delete", "删除选中")
                                : L10n.t("protectedDelete", "系统目录受保护，不能删除"),
                disabled: model.archive == nil || !model.canModify) { model.removeSelected() }
-            tb("info.circle", L10n.t("info", "显示归档信息"), disabled: model.archive == nil) {
+            tb("info.circle", L10n.t("info", L10n.t("ctx.info", "显示归档信息")), disabled: model.archive == nil) {
                 model.showInfo(); showInfoSheet = true
             }
             Spacer(minLength: 24)
@@ -1249,8 +1249,8 @@ struct ContentView: View {
                 quickPlace(L10n.t("path.desktop", "桌面"), "desktopcomputer", .desktopDirectory)
                 quickPlace(L10n.t("path.downloads", "下载"), "arrow.down.circle", .downloadsDirectory)
                 quickPlace(L10n.t("path.documents", "文稿"), "doc.text", .documentDirectory)
-                quickPlace("主目录", "house", nil)
-                quickPlace("根目录", "externaldrive", nil, forced: "/")
+                quickPlace(L10n.t("place.home", "主目录"), "house", nil)
+                quickPlace(L10n.t("place.root", "根目录"), "externaldrive", nil, forced: "/")
             }
 
             if model.busy {
@@ -1280,7 +1280,7 @@ struct ContentView: View {
                 Button { model.goUp() } label: {
                     Image(systemName: "chevron.up.circle.fill").font(.system(size: 15))
                 }
-                .buttonStyle(.borderless).help("上一级")
+                .buttonStyle(.borderless).help(L10n.t("place.up", "上一级"))
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 2) {
@@ -1316,23 +1316,23 @@ struct ContentView: View {
                     .onTapGesture(count: 2) { model.enter(e) }
                     .contextMenu {
                         // 「打开」= 交给系统默认程序（和 Finder 一致）
-                        Button("打开") {
+                        Button(L10n.t("ctx.open", "打开")) {
                             NSWorkspace.shared.open(e.url)
                         }
                         // 能解析成归档的，额外给一个入口
                         if canTryAsArchive(e.url) {
-                            Button("作为归档查看") {
+                            Button(L10n.t("ctx.openAsArchive", "作为归档查看")) {
                                 model.open(e.url, fallbackToSystem: false)
                             }
                         }
                         Divider()
-                        Button("压缩为 7z…") { askCreate(items: [e.url], ext: "7z") }
-                        Button("压缩为 zip…") { askCreate(items: [e.url], ext: "zip") }
+                        Button(L10n.t("ctx.compress7z", "压缩为 7z…")) { askCreate(items: [e.url], ext: "7z") }
+                        Button(L10n.t("ctx.compressZip", "压缩为 zip…")) { askCreate(items: [e.url], ext: "zip") }
                         Divider()
-                        Button("在 Finder 中显示") {
+                        Button(L10n.t("ctx.revealInFinder", "在 Finder 中显示")) {
                             NSWorkspace.shared.activateFileViewerSelecting([e.url])
                         }
-                        Button("移到废纸篓") { model.trash([e.url]) }
+                        Button(L10n.t("ctx.moveToTrash", "移到废纸篓")) { model.trash([e.url]) }
                             .disabled(!model.canModify)
                     }
                     .help(e.url.path)
@@ -1358,9 +1358,9 @@ struct ContentView: View {
                 if !model.currentPath.isEmpty {
                     Button { model.currentPath = (model.currentPath as NSString).deletingLastPathComponent == "." ? "" : (model.currentPath as NSString).deletingLastPathComponent } label: {
                         Image(systemName: "arrow.up.backward")
-                    }.buttonStyle(.borderless).help("返回上级目录")
+                    }.buttonStyle(.borderless).help(L10n.t("place.upTooltip", "返回上级目录"))
                 }
-                Text(model.archive?.lastPathComponent ?? "未打开归档").font(.caption).bold()
+                Text(model.archive?.lastPathComponent ?? L10n.t("status.noArchiveTitle", "未打开归档")).font(.caption).bold()
                 if !model.currentPath.isEmpty {
                     Text("/" + model.currentPath).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -1397,19 +1397,19 @@ struct ContentView: View {
                         return provider
                     }
                     .contextMenu {
-                        Button("打开") { model.openEntry(e) }
-                        Button("展开嵌套归档") { model.enterEntry(e) }
+                        Button(L10n.t("ctx.open", "打开")) { model.openEntry(e) }
+                        Button(L10n.t("ctx.expandNested", "展开嵌套归档")) { model.enterEntry(e) }
                         Divider()
-                        Button("解压选中项") { askExtract() }
-                        Button("全部解压…") { askExtractAll() }
+                        Button(L10n.t("ctx.extractSelected", "解压选中项")) { askExtract() }
+                        Button(L10n.t("ctx.extractAll", "全部解压…")) { askExtractAll() }
                         Divider()
-                        Button("复制到…") { askMoveCopy(copy: true) }
-                        Button("移动到…") { askMoveCopy(copy: false) }
+                        Button(L10n.t("ctx.copyTo", "复制到…")) { askMoveCopy(copy: true) }
+                        Button(L10n.t("ctx.moveTo", "移动到…")) { askMoveCopy(copy: false) }
                         Divider()
-                        Button("测试完整性") { model.test() }
-                        Button("显示归档信息") { model.showInfo(); showInfoSheet = true }
+                        Button(L10n.t("ctx.test", "测试完整性")) { model.test() }
+                        Button(L10n.t("ctx.info", "显示归档信息")) { model.showInfo(); showInfoSheet = true }
                         if let a = model.archive {
-                            Button("在 Finder 中显示归档") {
+                            Button(L10n.t("ctx.revealArchive", "在 Finder 中显示归档")) {
                                 NSWorkspace.shared.activateFileViewerSelecting([a])
                             }
                         }
@@ -1423,7 +1423,7 @@ struct ContentView: View {
                     Text(e.isDirectory ? "—" : ByteCountFormatter.string(fromByteCount: e.packedSize, countStyle: .file))
                         .foregroundStyle(.secondary).monospacedDigit()
                 }.width(90)
-                TableColumn("修改时间") { e in
+                TableColumn(L10n.t("col.modifiedFull", "修改时间")) { e in
                     Text(e.modified).foregroundStyle(.secondary).font(.caption)
                 }.width(150)
                 TableColumn("CRC") { e in
@@ -1463,13 +1463,13 @@ struct ContentView: View {
         guard model.archive != nil else { return }
         let sel = model.entries.filter { model.selection.contains($0.id) }
         guard let first = sel.first else {
-            model.status = "先在右边选中一个条目"
+            model.status = L10n.t("hint.selectEntryFirst", "先在右边选中一个条目")
             return
         }
 
         let alert = NSAlert()
-        alert.messageText = copy ? "复制到（归档内路径）" : "移动到（归档内路径）"
-        alert.informativeText = "例如 dir/newname.txt —— 只改归档内部结构，不动磁盘"
+        alert.messageText = copy ? L10n.t("dialog.copyToTitle", "复制到（归档内路径）") : L10n.t("dialog.moveToTitle", "移动到（归档内路径）")
+        alert.informativeText = L10n.t("dialog.pathHint", "例如 dir/newname.txt —— 只改归档内部结构，不动磁盘")
         alert.addButton(withTitle: L10n.t("ui.confirm", "确定"))
         alert.addButton(withTitle: L10n.t("ui.cancel", "取消"))
 
@@ -1493,16 +1493,16 @@ struct ContentView: View {
         let picked = model.entries.filter { model.selection.contains($0.id) }
         guard !picked.isEmpty else {
             let a = NSAlert()
-            a.messageText = "先选一下要解压的文件"
-            a.informativeText = "在右边列表里点选条目，再点解压。\n如果想全部解压，右键菜单里有「全部解压」。"
+            a.messageText = L10n.t("dialog.selectToExtract", "先选一下要解压的文件")
+            a.informativeText = L10n.t("dialog.selectToExtractBody", "在右边列表里点选条目，再点解压。\n如果想全部解压，右键菜单里有「全部解压」。")
             a.addButton(withTitle: L10n.t("ui.gotIt", "知道了"))
             a.runModal()
             return
         }
 
         let panel = NSOpenPanel()
-        panel.title = "解压到哪里"
-        panel.prompt = "解压"
+        panel.title = L10n.t("dialog.extractWhere", "解压到哪里")
+        panel.prompt = L10n.t("ui.extract", "解压")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
@@ -1517,8 +1517,8 @@ struct ContentView: View {
     private func askExtractAll() {
         guard model.archive != nil else { return }
         let panel = NSOpenPanel()
-        panel.title = "全部解压到哪里"
-        panel.prompt = "解压"
+        panel.title = L10n.t("dialog.extractAllWhere", "全部解压到哪里")
+        panel.prompt = L10n.t("ui.extract", "解压")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
@@ -1533,8 +1533,8 @@ struct ContentView: View {
     private func askAddToArchive() {
         guard model.archive != nil else { return }
         let panel = NSOpenPanel()
-        panel.title = "添加到归档"
-        panel.prompt = "添加"
+        panel.title = L10n.t("dialog.addToArchive", "添加到归档")
+        panel.prompt = L10n.t("ui.add", "添加")
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
@@ -1548,14 +1548,14 @@ struct ContentView: View {
     /// 弹保存面板，选格式和位置
     private func askCreate(items: [URL], ext: String) {
         guard !items.isEmpty else {
-            model.status = "先选中要压缩的文件或文件夹"
+            model.status = L10n.t("hint.selectToCompressFirst", "先选中要压缩的文件或文件夹")
             return
         }
 
         let panel = NSSavePanel()
-        panel.title = "创建归档"
-        panel.prompt = "压缩"
-        let base = items.first?.deletingPathExtension().lastPathComponent ?? "归档"
+        panel.title = L10n.t("dialog.createArchive", "创建归档")
+        panel.prompt = L10n.t("ui.compress", "压缩")
+        let base = items.first?.deletingPathExtension().lastPathComponent ?? L10n.t("ui.archive", "归档")
         panel.nameFieldStringValue = base + "." + ext
         panel.directoryURL = model.fsPath
         panel.canCreateDirectories = true
@@ -1611,7 +1611,7 @@ struct ContentView: View {
     private var statusBar: some View {
         HStack(spacing: 8) {
             Text(model.fsPath.path).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            Text("\(model.fsItems.count) 项").font(.caption2).foregroundStyle(.tertiary)
+            Text(L10n.f("status.itemCount", "%d 项", model.fsItems.count)).font(.caption2).foregroundStyle(.tertiary)
             Divider().frame(height: 12)
             Text(model.status).font(.caption).lineLimit(1).truncationMode(.middle)
             Spacer()
@@ -1639,17 +1639,17 @@ struct SilentZIPApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .appInfo) {
-                Button("关于 SilentZIP") {
+                Button(L10n.t("menu.about", "关于 SilentZIP")) {
                     AboutBus.shared.open = true
                     NSApp.activate(ignoringOtherApps: true)
                 }
             }
             CommandGroup(after: .appInfo) {
                 Divider()
-                Button("设为默认压缩工具") {
+                Button(L10n.t("menu.setDefault", "设为默认压缩工具")) {
                     ArchiveTypes.becomeDefault()
                 }
-                Button("安装命令行工具…") {
+                Button(L10n.t("menu.installCLI", "安装命令行工具…")) {
                     CLITool.install()
                 }
             }
