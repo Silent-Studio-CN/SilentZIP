@@ -75,7 +75,7 @@ final class CompressDialog: NSObject {
         options.outputPath = suggested
 
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 860, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 860, height: 470),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -122,6 +122,9 @@ final class CompressDialog: NSObject {
         cols.alignment = .top
         cols.distribution = .fill
         cols.spacing = 40
+        cols.setContentHuggingPriority(.required, for: .vertical)
+        left.setContentHuggingPriority(.required, for: .vertical)
+        right.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(cols)
 
         // 底部按钮
@@ -138,8 +141,16 @@ final class CompressDialog: NSObject {
         root.addArrangedSubview(bottom)
 
         bottom.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -40).isActive = true
+        bottom.setContentHuggingPriority(.required, for: .vertical)
 
+        root.translatesAutoresizingMaskIntoConstraints = false
         window.contentView = root
+        NSLayoutConstraint.activate([
+            root.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor),
+            root.topAnchor.constraint(equalTo: window.contentView!.topAnchor),
+            root.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor)
+        ])
         refreshDependentControls()
     }
 
@@ -210,7 +221,8 @@ final class CompressDialog: NSObject {
         stack.alignment = .leading
         stack.distribution = .fill
         stack.spacing = 8
-        stack.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        stack.setContentHuggingPriority(.required, for: .vertical)
+        grid.setContentHuggingPriority(.required, for: .vertical)
         return stack
     }
 
@@ -226,6 +238,7 @@ final class CompressDialog: NSObject {
         topGrid.rowSpacing = 8
         topGrid.column(at: 0).xPlacement = .trailing
         topGrid.column(at: 1).width = 160
+        topGrid.setContentHuggingPriority(.required, for: .vertical)
 
         let optTitle = NSTextField(labelWithString: "选项")
         optTitle.font = .boldSystemFont(ofSize: 12)
@@ -251,18 +264,28 @@ final class CompressDialog: NSObject {
         encGrid.columnSpacing = 12
         encGrid.rowSpacing = 8
         encGrid.column(at: 0).xPlacement = .trailing
+        encGrid.setContentHuggingPriority(.required, for: .vertical)
 
-        let stack = NSStackView(views: [
-            topGrid, divider(),
-            optTitle, sfxCheck, sharedCheck, delSrcCheck,
-            divider(),
-            encTitle, encGrid
-        ])
+        let checks = NSStackView(views: [sfxCheck, sharedCheck, delSrcCheck])
+        checks.orientation = .vertical
+        checks.alignment = .leading
+        checks.spacing = 4
+
+        let encBlock = NSStackView(views: [encTitle, encGrid])
+        encBlock.orientation = .vertical
+        encBlock.alignment = .leading
+        encBlock.spacing = 6
+
+        let stack = NSStackView(views: [topGrid, divider(), optTitle, checks,
+                                        divider(), encBlock])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.distribution = .fill
-        stack.spacing = 8
-        stack.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        stack.spacing = 10
+        stack.setContentHuggingPriority(.required, for: .vertical)
+        for v in stack.arrangedSubviews {
+            v.setContentHuggingPriority(.required, for: .vertical)
+        }
         return stack
     }
 
