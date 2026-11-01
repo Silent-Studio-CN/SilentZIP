@@ -60,12 +60,10 @@ final class CompressDialog: NSObject {
         return all.filter { parseSizeMB($0) <= limitMB }
     }
 
-    /// 固实块上限同理
+    /// 固实块：7-Zip 给的是 512KB ~ 64GB，共 20 档，没有「关闭」
     private var solids: [String] {
-        let gb = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
-        if gb < 8  { return ["off", "4m", "8m", "16m", "32m", "64m"] }
-        if gb < 16 { return ["off", "4m", "16m", "64m", "256m"] }
-        return ["off", "4m", "16m", "64m", "256m", "1g", "4g"]
+        ["512k", "1m", "2m", "4m", "8m", "16m", "32m", "64m", "128m", "256m",
+         "512m", "1g", "2g", "4g", "8g", "16g", "32g", "64g"]
     }
 
     private var totalGB: Double {
@@ -77,7 +75,7 @@ final class CompressDialog: NSObject {
         options.outputPath = suggested
 
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 700, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 860, height: 520),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -104,7 +102,7 @@ final class CompressDialog: NSObject {
         // 顶部：压缩包路径
         archiveField.stringValue = options.outputPath
         archiveField.font = .systemFont(ofSize: 12)
-        archiveField.widthAnchor.constraint(greaterThanOrEqualToConstant: 520).isActive = true
+        archiveField.widthAnchor.constraint(greaterThanOrEqualToConstant: 640).isActive = true
 
         let browse = NSButton(title: "…", target: self, action: #selector(browseTapped))
         let browseBtn = NSButton(title: "浏览…", target: self, action: #selector(browseTapped))
@@ -123,7 +121,7 @@ final class CompressDialog: NSObject {
         cols.orientation = .horizontal
         cols.alignment = .top
         cols.distribution = .fill
-        cols.spacing = 32
+        cols.spacing = 40
         root.addArrangedSubview(cols)
 
         // 底部按钮
@@ -176,8 +174,7 @@ final class CompressDialog: NSObject {
         wordPop.addItems(withTitles: words)
         wordPop.selectItem(at: words.firstIndex(of: "64") ?? 8)
         solidPop.addItems(withTitles: solids)
-        if let i = solids.firstIndex(of: "4g") { solidPop.selectItem(at: i) }
-        else { solidPop.selectItem(at: solids.count - 1) }
+        if let i = solids.firstIndex(of: "16g") { solidPop.selectItem(at: i) }
 
         let cores = ProcessInfo.processInfo.activeProcessorCount
         threadPop.addItem(withTitle: "自动")
@@ -204,7 +201,7 @@ final class CompressDialog: NSObject {
         grid.columnSpacing = 12
         grid.rowSpacing = 8
         grid.column(at: 0).xPlacement = .trailing
-        grid.column(at: 1).width = 180
+        grid.column(at: 1).width = 200
         grid.setContentHuggingPriority(.defaultHigh, for: .vertical)
         grid.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
