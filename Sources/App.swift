@@ -234,12 +234,12 @@ enum CLITool {
             try fm.createSymbolicLink(at: target, withDestinationURL: sz)
             alert(L10n.t("cli.installedTitle", "已安装"), "现在可以在终端里直接用：\n\nsz list 某个归档.sz全部")
         } catch {
-            alert(L10n.t("error.installFailed", "安装失败"), """
-            没有权限写入 /usr/local/bin。
-
-            可以手动执行：
-            sudo ln -sf "(sz.path)" /usr/local/bin/sz
-            """)
+            CopyableAlert.show(
+                title: L10n.t("error.installFailed", "安装失败"),
+                message: L10n.t("cli.noPermission",
+                                "没有权限写入 /usr/local/bin。\n\n可以在终端里手动执行下面这条命令："),
+                command: "sudo ln -sf \"\(sz.path)\" /usr/local/bin/sz"
+            )
         }
     }
 
@@ -377,7 +377,7 @@ struct AboutView: View {
                         Text(L10n.t("about.tech", "技术")).font(.headline)
 
                         techRow(L10n.t("about.ui", "界面"), "SwiftUI + AppKit")
-                        techRow(L10n.t("about.engine", "归档引擎"), "7-Zip（p7zip 17.05）")
+                        techRow(L10n.t("about.engine", "归档引擎"), "7-Zip 26.05（自编译）")
                         techRow(L10n.t("about.engineCopyright", "引擎版权"), "© 1999-2025 Igor Pavlov")
                         techRow(L10n.t("about.engineLicense", "引擎许可"), "GNU LGPL · unRAR restriction")
 
@@ -642,6 +642,38 @@ final class ZipModel: ObservableObject {
 
     /// 当前选用的压缩预设
     @Published var preset: CompressPreset = PresetStore.all.first ?? CompressPreset(name: "标准 7z")
+
+    /// 用完整参数压缩
+    func createArchive(from items: [URL], to target: URL, options: CompressOptions) {
+        guard !items.isEmpty else { return }
+        busy = true
+        status = L10n.t("status.compressing", "压缩中…")
+
+        let extra = options.arguments()
+        Task.detached(priority: .userInitiated) {
+            do {
+                try ArchiveBackend.shared.create(target, from: items,
+                                                  format: options.format, extra: extra)
+                let list = try ArchiveBackend.shared.list(target)
+                await MainActor.run {
+                    self.archive = target
+                    self.entries = list
+                    self.currentPath = ""
+                    self.selection = []
+                    self.status = L10n.f("status.created", "已创建 %@（%d 个条目）",
+                                         target.lastPathComponent, list.count)
+                    self.busy = false
+                    self.loadFS(self.fsPath)
+                }
+            } catch {
+                await MainActor.run {
+                    self.status = L10n.f("error.compressFailed", "压缩失败：%@",
+                                         error.localizedDescription)
+                    self.busy = false
+                }
+            }
+        }
+    }
 
     /// 把选中的文件/文件夹压缩成新归档
     func createArchive(from items: [URL], to target: URL) {
@@ -1073,6 +1105,10 @@ struct ContentView: View {
 
     @State private var showInfoSheet = false
     @State private var showAbout = false
+    /// 换语言后 +1，用来强制重建界面
+    @State private var appLanguageRevision = 0
+    /// 参数对话框要一直持有，否则窗口刚显示就被释放
+    @State private var activeDialog: AnyObject?
     // 0 表示用户还没拖过 —— 此时左栏固定占一半，分隔线居中
     @AppStorage("leftPaneWidth") private var leftWidth: Double = 0
     @AppStorage("lastVisitedPath") private var lastVisitedPath: String = ""
@@ -1096,6 +1132,32 @@ struct ContentView: View {
         }
         .frame(minWidth: 1000, idealWidth: 1180, minHeight: 600)
         .onAppear {
+            // 把界面的动作挂给菜单栏
+            AppActions.shared.openArchive = { showOpen = true }
+            AppActions.shared.extractAll = { askExtractAll() }
+            AppActions.shared.compressSelected = { askAndCreateArchive() }
+            AppActions.shared.refresh = { model.loadFS(model.fsPath) }
+            AppActions.shared.goUp = { model.goUp() }
+            AppActions.shared.goHome = {
+                model.loadFS(URL(fileURLWithPath: NSHomeDirectory()))
+            }
+            AppActions.shared.goDesktop = {
+                if let d = FileManager.default.urls(for: .desktopDirectory,
+                                                    in: .userDomainMask).first {
+                    model.loadFS(d)
+                }
+            }
+            AppActions.shared.testArchive = { model.test() }
+            AppActions.shared.showInfo = {
+                model.showInfo()
+                showInfoSheet = true
+            }
+            AppActions.shared.runBenchmark = { Benchmark.run() }
+            AppActions.shared.languageChanged = {
+                // 语言文件换了，重建界面
+                appLanguageRevision += 1
+            }
+
             // 恢复上次访问的目录
             let saved = UserDefaults.standard.string(forKey: "lastVisitedPath") ?? ""
             let target = saved.isEmpty ? model.fsPath : URL(fileURLWithPath: saved)
@@ -1142,6 +1204,13 @@ struct ContentView: View {
                 }
             }
 
+            if CommandLine.arguments.contains("--compress-dialog") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    let dlg = CompressDialog()
+                    dlg.show(suggested: NSHomeDirectory() + "/Desktop/test.7z") { _ in }
+                    activeDialog = dlg
+                }
+            }
             if CommandLine.arguments.contains("--set-default") {
                 let n = ArchiveTypes.becomeDefault()
                 let msg = "becomeDefault: " + String(n) + "/" + String(ArchiveTypes.utis.count)
@@ -1316,6 +1385,7 @@ struct ContentView: View {
                             .resizable()
                             .frame(width: 18, height: 18)
                         Text(e.name).lineLimit(1)
+                        Spacer(minLength: 0)   // 撑满整列，空白处也能双击
                     }
                     // 单击只选中（Table 原生），双击才进目录
                     .contentShape(Rectangle())
@@ -1490,7 +1560,28 @@ struct ContentView: View {
         }
     }
 
-    private func askAndCreateArchive() { askCreate(items: model.fsSelectedItems, ext: "7z") }
+    /// 压缩按钮：先弹完整的参数对话框，确认后再压
+    private func askAndCreateArchive() {
+        let items = model.fsSelectedItems
+        guard !items.isEmpty else {
+            let a = NSAlert()
+            a.messageText = L10n.t("hint.selectToCompressFirst", "先选中要压缩的文件或文件夹")
+            a.addButton(withTitle: L10n.t("ui.gotIt", "知道了"))
+            a.runModal()
+            return
+        }
+
+        let base = items.first?.deletingPathExtension().lastPathComponent ?? "归档"
+        let suggested = model.fsPath.appendingPathComponent(base + ".7z").path
+
+        let dlg = CompressDialog()
+        dlg.show(suggested: suggested) { opts in
+            let target = URL(fileURLWithPath: opts.outputPath)
+            model.createArchive(from: items, to: target, options: opts)
+        }
+        // 保持引用，窗口关掉前不能释放
+        activeDialog = dlg
+    }
 
     /// 解压按钮：有选中就解压选中，没选中就提示，不替用户做决定
     private func askExtract() {
@@ -1669,6 +1760,80 @@ struct SilentZIPApp: App {
                 }
             }
             CommandGroup(after: .appInfo) {
+                Divider()
+                Button(L10n.t("menu.setDefault", "设为默认压缩工具")) {
+                    ArchiveTypes.becomeDefault()
+                }
+                Button(L10n.t("menu.installCLI", "安装命令行工具…")) {
+                    CLITool.install()
+                }
+                Divider()
+                Menu(L10n.t("menu.language", "语言")) {
+                    ForEach(L10n.available, id: \.code) { lang in
+                        Button {
+                            UserDefaults.standard.set(lang.code, forKey: "uiLanguage")
+                            L10n.load(lang.code)
+                            AppActions.shared.languageChanged?()
+                        } label: {
+                            if L10n.currentCode() == lang.code {
+                                Text("✓ " + lang.name)
+                            } else {
+                                Text("   " + lang.name)
+                            }
+                        }
+                    }
+                }
+                Divider()
+                Button(L10n.t("menu.benchmark", "基准测试…")) {
+                    AppActions.shared.runBenchmark?()
+                }
+            }
+            // 文件
+            CommandGroup(after: .newItem) {
+                Divider()
+                Button(L10n.t("menu.openArchive", "打开归档…")) {
+                    AppActions.shared.openArchive?()
+                }
+                .keyboardShortcut("o", modifiers: .command)
+                Button(L10n.t("menu.extractAll", "全部解压…")) {
+                    AppActions.shared.extractAll?()
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                Button(L10n.t("menu.compressSelected", "压缩选中项…")) {
+                    AppActions.shared.compressSelected?()
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+
+            // 查看
+            CommandMenu(L10n.t("menu.go", "转到")) {
+                Button(L10n.t("menu.refresh", "刷新")) {
+                    AppActions.shared.refresh?()
+                }
+                .keyboardShortcut("r", modifiers: .command)
+                Button(L10n.t("menu.up", "向上一级")) {
+                    AppActions.shared.goUp?()
+                }
+                .keyboardShortcut(.upArrow, modifiers: .command)
+                Divider()
+                Button(L10n.t("menu.openHome", "回到主目录")) {
+                    AppActions.shared.goHome?()
+                }
+                Button(L10n.t("menu.openDesktop", "回到桌面")) {
+                    AppActions.shared.goDesktop?()
+                }
+            }
+
+            // 工具
+            CommandMenu(L10n.t("menu.tools", "工具")) {
+                Button(L10n.t("menu.testIntegrity", "测试完整性")) {
+                    AppActions.shared.testArchive?()
+                }
+                .keyboardShortcut("t", modifiers: .command)
+                Button(L10n.t("menu.archiveInfo", "归档信息")) {
+                    AppActions.shared.showInfo?()
+                }
+                .keyboardShortcut("i", modifiers: .command)
                 Divider()
                 Button(L10n.t("menu.setDefault", "设为默认压缩工具")) {
                     ArchiveTypes.becomeDefault()

@@ -12,6 +12,23 @@ enum L10n {
     /// 已加载的键数量，给「语言」设置页显示用
     static var keyCount: Int { table.count }
 
+    /// 可用的语言。name 用各语言自己的写法，切换时好认。
+    static let available: [(code: String, name: String)] = [
+        ("zh-Hans", "简体中文"),
+        ("zh-Hant", "繁體中文"),
+        ("en",      "English"),
+        ("ja",      "日本語"),
+        ("ko",      "한국어"),
+        ("ru",      "Русский"),
+        ("fr",      "Français"),
+        ("de",      "Deutsch")
+    ]
+
+    /// 当前生效的语言代码
+    static func currentCode() -> String {
+        UserDefaults.standard.string(forKey: "uiLanguage") ?? preferred()
+    }
+
     static var language: String { currentLanguage }
 
     /// 启动时调一次
