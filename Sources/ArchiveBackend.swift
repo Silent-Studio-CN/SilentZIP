@@ -231,14 +231,16 @@ final class ArchiveBackend: @unchecked Sendable {
                      fileCount, folderCount)
             : L10n.f("test.failed", "检查失败：%d 个错误", badCount)
 
-        let unit = L10n.t("test.unit", "个")
+        // 英文不需要「个」这种量词，空串时就不拼
+        let unitRaw = L10n.t("test.unit", "个")
+        let unit = unitRaw.isEmpty ? "" : " " + unitRaw
         let detail = """
         \(passed ? L10n.t("test.ok", "✅ 归档完整") : L10n.t("test.bad", "❌ 归档存在问题"))
 
-        \(L10n.t("test.files", "文件"))       \(fileCount) \(unit)
-        \(L10n.t("test.folders", "目录"))       \(folderCount) \(unit)
-        \(L10n.t("test.total", "合计"))       \(totalCount) \(unit)
-        \(L10n.t("test.errors", "错误"))       \(badCount) \(unit)
+        \(L10n.t("test.files", "文件"))       \(fileCount)\(unit)
+        \(L10n.t("test.folders", "目录"))       \(folderCount)\(unit)
+        \(L10n.t("test.total", "合计"))       \(totalCount)\(unit)
+        \(L10n.t("test.errors", "错误"))       \(badCount)\(unit)
         \(L10n.t("test.exitCode", "退出码"))     \(code)
         \(L10n.t("test.tool", "工具"))       \(tool)
 
