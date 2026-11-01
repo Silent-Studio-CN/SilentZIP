@@ -38,6 +38,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 让系统重新扫描本 app 的 NSServices —— 否则右键菜单里看不到，
         // 用户还得手动去「系统设置 → 键盘 → 服务」勾选
         NSUpdateDynamicServices()
+
+        // 首次启动静默接管压缩包。
+        // 从 app 内部调 LS API 系统不弹确认窗口，所以用户装完拖进
+        // Applications、第一次打开就全自动完成，不需要任何设置。
+        if !UserDefaults.standard.bool(forKey: "didRegisterDefaults") {
+            let n = ArchiveTypes.becomeDefault()
+            if n > 0 {
+                UserDefaults.standard.set(true, forKey: "didRegisterDefaults")
+            }
+        }
     }
 
     // MARK: - Finder 右键「快速操作」/「服务」
