@@ -17,4 +17,5 @@ final class AppActions: ObservableObject {
     var showInfo: (() -> Void)?
     var languageChanged: (() -> Void)?
     var runBenchmark: (() -> Void)?
+    var relaunch: (() -> Void)?
 }

@@ -122,8 +122,8 @@ final class CompressDialog: NSObject {
         let cols = NSGridView(views: [[left, right]])
         cols.columnSpacing = 24
         cols.rowSpacing = 0
-        cols.column(at: 0).width = 306
-        cols.column(at: 1).width = 330
+        cols.column(at: 0).width = 322
+        cols.column(at: 1).width = 314
         cols.column(at: 0).xPlacement = .leading
         cols.column(at: 1).xPlacement = .leading
         cols.rowAlignment = .firstBaseline
@@ -383,23 +383,31 @@ final class CompressDialog: NSObject {
     }
 
     @objc private func okTapped() {
+        // 每个下拉都要判空 —— indexOfSelectedItem 返回 -1 时直接下标会崩
+        func pick<T>(_ pop: NSPopUpButton, _ list: [T], _ fallback: T) -> T {
+            let i = pop.indexOfSelectedItem
+            return (i >= 0 && i < list.count) ? list[i] : fallback
+        }
+
         var o = options
         o.outputPath = archiveField.stringValue
-        o.format = formats[formatPop.indexOfSelectedItem]
-        o.level = levelValues[levelPop.indexOfSelectedItem]
-        let currentMethods = methodsFor(formats[formatPop.indexOfSelectedItem])
+
+        let fmt = pick(formatPop, formats, "7z")
+        o.format = fmt
+        o.level = pick(levelPop, levelValues, 5)
+
+        let currentMethods = methodsFor(fmt)
         if !currentMethods.isEmpty {
-            o.method = currentMethods[min(methodPop.indexOfSelectedItem,
-                                          currentMethods.count - 1)]
+            o.method = pick(methodPop, currentMethods, currentMethods[0])
         }
-        o.dictionarySize = dicts[dictPop.indexOfSelectedItem]
-        o.wordSize = Int(["16", "32", "64", "128", "273"][wordPop.indexOfSelectedItem]) ?? 64
-        o.solidSize = solids[solidPop.indexOfSelectedItem]
-        o.threads = threadPop.indexOfSelectedItem
+        o.dictionarySize = pick(dictPop, dicts, "256m")
+        o.wordSize = Int(pick(wordPop, ["5","6","8","12","16","24","32","48","64","96","128","192","256","273"], "64")) ?? 64
+        o.solidSize = pick(solidPop, solids, "16g")
+        o.threads = max(threadPop.indexOfSelectedItem, 0)
         o.volumeSize = volumeField.stringValue.trimmingCharacters(in: .whitespaces)
         o.extraParams = extraField.stringValue
-        o.updateMode = UpdateMode.allCases[updatePop.indexOfSelectedItem]
-        o.pathMode = PathMode.allCases[pathPop.indexOfSelectedItem]
+        o.updateMode = pick(updatePop, UpdateMode.allCases, .addAndReplace)
+        o.pathMode = pick(pathPop, PathMode.allCases, .relative)
         o.createSFX = sfxCheck.state == .on
         o.compressShared = sharedCheck.state == .on
         o.deleteSource = delSrcCheck.state == .on

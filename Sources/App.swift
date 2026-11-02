@@ -1200,6 +1200,17 @@ struct ContentView: View {
                 showInfoSheet = true
             }
             AppActions.shared.runBenchmark = { Benchmark.run() }
+            AppActions.shared.relaunch = {
+                // 语言表是静态的，已经建好的视图不会重绘 —— 直接重启最省事
+                let url = Bundle.main.bundleURL
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                task.arguments = [url.path]
+                try? task.run()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    NSApp.terminate(nil)
+                }
+            }
             AppActions.shared.languageChanged = {
                 // 语言文件换了，重建界面
                 appLanguageRevision += 1
@@ -1820,7 +1831,7 @@ struct SilentZIPApp: App {
                         Button {
                             UserDefaults.standard.set(lang.code, forKey: "uiLanguage")
                             L10n.load(lang.code)
-                            AppActions.shared.languageChanged?()
+                            AppActions.shared.relaunch?()
                         } label: {
                             if L10n.currentCode() == lang.code {
                                 Text("✓ " + lang.name)
