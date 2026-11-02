@@ -21,7 +21,9 @@ fi
 echo "② 组装暂存目录"
 rm -rf "$STAGE" "$RW"
 mkdir -p "$STAGE/.background"
-cp -R "$APP" "$STAGE/"
+# 用 ditto 而不是 cp -R —— cp 会把 com.apple.FinderInfo 一起带进去，
+# 那个属性会让 codesign --verify 报 "resource fork ... not allowed"
+ditto --norsrc --noextattr "$APP" "$STAGE/$(basename "$APP")"
 cp packaging/background.tiff "$STAGE/.background/background.tiff"
 ln -s /Applications "$STAGE/Applications"
 

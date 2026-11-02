@@ -27,6 +27,33 @@ swiftc -swift-version 5 -O -target "$TARGET" Sources/*.swift -o "$BIN" \
 if [ -f Resources/SilentZIP.icns ]; then
   cp Resources/SilentZIP.icns "$APP/Contents/Resources/SilentZIP.icns"
 fi
+# 帮助文档（各语言 .lproj）
+if [ -d Resources/Help ]; then
+  for d in Resources/Help/*.lproj; do
+    [ -d "$d" ] || continue
+    name=$(basename "$d")
+    mkdir -p "$APP/Contents/Resources/$name"
+    cp -R "$d/Help" "$APP/Contents/Resources/$name/" 2>/dev/null
+    # Help Viewer 没有索引就会报「所选内容当前不可用」
+    HELPDIR="$APP/Contents/Resources/$name/Help"
+    if [ -f "$HELPDIR/index.html" ]; then
+      ( cd "$HELPDIR" && hiutil -C -a -f search.helpindex . >/dev/null 2>&1 )
+    fi
+    # 本地化帮助书名
+    plist="$APP/Contents/Resources/$name/InfoPlist.strings"
+    case "$name" in
+      zh-Hans.lproj) echo 'CFBundleHelpBookName = "SilentZIP 帮助";' > "$plist" ;;
+      zh-Hant.lproj) echo 'CFBundleHelpBookName = "SilentZIP 說明";' > "$plist" ;;
+      ja.lproj)      echo 'CFBundleHelpBookName = "SilentZIP ヘルプ";' > "$plist" ;;
+      ko.lproj)      echo 'CFBundleHelpBookName = "SilentZIP 도움말";' > "$plist" ;;
+      ru.lproj)      echo 'CFBundleHelpBookName = "Справка SilentZIP";' > "$plist" ;;
+      fr.lproj)      echo 'CFBundleHelpBookName = "Aide SilentZIP";' > "$plist" ;;
+      de.lproj)      echo 'CFBundleHelpBookName = "SilentZIP-Hilfe";' > "$plist" ;;
+      *)             echo 'CFBundleHelpBookName = "SilentZIP Help";' > "$plist" ;;
+    esac
+  done
+fi
+
 if [ -d language/app ]; then
   mkdir -p "$APP/Contents/Resources/app"
   cp language/app/*.ini "$APP/Contents/Resources/app/" 2>/dev/null
@@ -83,6 +110,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleExecutable</key><string>SilentZIP</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+  <key>CFBundleHelpBookFolder</key><string>Help</string>
+  <key>CFBundleHelpBookName</key><string>SilentZIP Help</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>NSAppleScriptEnabled</key><true/>
   <key>OSAScriptingDefinition</key><string>SilentZIP.sdef</string>
@@ -186,7 +215,7 @@ PLIST
 
 # 先签扩展，再签整个 app（顺序不能反）
 codesign --force --sign - --timestamp=none "$APPEX" 2>/dev/null || true
-codesign --force --deep --sign - "$APP" 2>/dev/null || true
+codesign --force --sign - "$APP" 2>/dev/null || true
 
 LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 "$LSREG" -f "$APP" 2>/dev/null || true

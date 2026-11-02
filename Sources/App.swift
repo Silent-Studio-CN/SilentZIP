@@ -34,6 +34,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 关掉「自动终止」。
+        // macOS 会把没有窗口的进程判成可回收 —— 启动瞬间窗口还没建出来，
+        // 系统就把整个 app 杀了，表现就是「闪一下就退」。
+        ProcessInfo.processInfo.disableAutomaticTermination("保持后台常驻")
+
         L10n.load()
         NSApp.activate(ignoringOtherApps: true)
         // 让系统重新扫描本 app 的 NSServices —— 否则右键菜单里看不到，
@@ -311,16 +316,29 @@ enum ArchiveTypes {
     /// 需要用户主动触发 —— 系统会忽略无交互的静默设置。
     @discardableResult
     static func becomeDefault() -> Int {
-        var changed = 0
+        // 老 API：macOS 27 之后每调一次弹一次确认窗。
+        // 只在老系统上用，新系统走 async 版本。
         for u in utis {
             for role: LSRolesMask in [.viewer, .editor, .shell] {
-                _ = LSSetDefaultRoleHandlerForContentType(u as CFString, role, bundleID)
+                _ = LSSetDefaultRoleHandlerForContentType(
+                    u as CFString, role, bundleID)
             }
-            let cur = LSCopyDefaultRoleHandlerForContentType(u as CFString, .viewer)?
-                .takeRetainedValue() as String? ?? ""
-            if cur == "cn.silentstudio.silentzip" { changed += 1 }
         }
-        return changed
+        return currentCount()
+    }
+
+    /// macOS 12+ 的合并确认版本。
+    /// 一次调用对应一个格式，但系统会把它们归并成一次用户确认，
+    /// 而不是像老 API 那样弹 11 次。
+    @discardableResult
+    static func becomeDefaultAsync() async -> Int {
+        let me = Bundle.main.bundleURL
+        for u in utis {
+            guard let type = UTType(u) else { continue }
+            try? await NSWorkspace.shared.setDefaultApplication(
+                at: me, toOpen: type)
+        }
+        return currentCount()
     }
 
     /// 当前有多少格式已经指向我们
@@ -1214,6 +1232,7 @@ struct ContentView: View {
     @State private var appLanguageRevision = 0
     /// 参数对话框要一直持有，否则窗口刚显示就被释放
     @State private var activeDialog: AnyObject?
+    @State private var keyMonitor: Any?
     // 0 表示用户还没拖过 —— 此时左栏固定占一半，分隔线居中
     @AppStorage("leftPaneWidth") private var leftWidth: Double = 0
     @AppStorage("lastVisitedPath") private var lastVisitedPath: String = ""
@@ -1240,6 +1259,31 @@ struct ContentView: View {
         .onAppear {
             model.refreshStatusIfIdle()
 
+            // Enter 打开选中的条目。
+            // SwiftUI 的 Table 在 macOS 13 上不给回车回调，只能自己装键盘监听。
+            if keyMonitor == nil {
+                keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { ev in
+                    guard ev.keyCode == 36 || ev.keyCode == 76 else { return ev }
+                    // 正在输入文字（密码框、路径框）时不抢
+                    if let r = NSApp.keyWindow?.firstResponder,
+                       r is NSText || r is NSTextView {
+                        return ev
+                    }
+                    guard !model.busy else { return ev }
+                    // 右边有选中就进目录/打开条目，否则看左边
+                    if let e = model.entries.first(where: { model.selection.contains($0.id) }) {
+                        model.enterEntry(e)
+                        return nil
+                    }
+                    if let u = model.fsSelectedItems.first,
+                       let f = model.fsItems.first(where: { $0.url == u }) {
+                        model.enter(f)
+                        return nil
+                    }
+                    return ev
+                }
+            }
+
             // 把界面的动作挂给菜单栏
             AppActions.shared.openArchive = { showOpen = true }
             AppActions.shared.extractAll = { askExtractAll() }
@@ -1261,15 +1305,33 @@ struct ContentView: View {
                 showInfoSheet = true
             }
             AppActions.shared.runBenchmark = { Benchmark.run() }
+            AppActions.shared.openHelp = {
+                // 先找当前语言的帮助，没有再退回英文
+                let code = L10n.currentCode()
+                let candidates = [code, "en"]
+                for c in candidates {
+                    if let u = Bundle.main.url(forResource: "index", withExtension: "html",
+                                               subdirectory: c + ".lproj/Help") {
+                        NSWorkspace.shared.open(u)
+                        return
+                    }
+                }
+                // 实在没有就打开资源目录，让人自己翻
+                if let r = Bundle.main.resourceURL {
+                    NSWorkspace.shared.open(r)
+                }
+            }
             AppActions.shared.relaunch = {
-                // 语言表是静态的，已经建好的视图不会重绘 —— 直接重启最省事
-                let url = Bundle.main.bundleURL
+                // 切换语言后要重启才会重绘。
+                // 用 -g 在后台拉起 —— 不能抢焦点、不能弹到用户面前。
+                // 且必须等本进程退出后再 open，否则窗口会闪一下就没。
+                let path = Bundle.main.bundleURL.path
                 let task = Process()
-                task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                task.arguments = [url.path]
+                task.executableURL = URL(fileURLWithPath: "/bin/sh")
+                task.arguments = ["-c", "sleep 1; open -g '\(path)'"]
                 try? task.run()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    NSApp.terminate(nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    exit(0)
                 }
             }
             AppActions.shared.languageChanged = {
@@ -1331,11 +1393,14 @@ struct ContentView: View {
                 }
             }
             if CommandLine.arguments.contains("--set-default") {
-                let n = ArchiveTypes.becomeDefault()
-                let msg = "becomeDefault: " + String(n) + "/" + String(ArchiveTypes.utis.count)
-                try? msg.write(toFile: "/tmp/silentzip-default.log",
-                               atomically: true, encoding: .utf8)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.terminate(nil) }
+                Task { @MainActor in
+                    let n = await ArchiveTypes.becomeDefaultAsync()
+                    let msg = "becomeDefault: " + String(n) + "/" + String(ArchiveTypes.utis.count)
+                    try? msg.write(toFile: "/tmp/silentzip-default.log",
+                                   atomically: true, encoding: .utf8)
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    NSApp.terminate(nil)
+                }
             }
             // 调试用：--info 启动后自动弹信息窗
             if CommandLine.arguments.contains("--info") {
@@ -1918,6 +1983,13 @@ struct ContentView: View {
 struct SilentZIPApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
+    init() {
+        // .commands 里的菜单标题在 body 求值时就定死了，
+        // 那时 AppDelegate 的 applicationDidFinishLaunching 还没跑 ——
+        // 不在这儿先加载，菜单会永远停在 fallback 文本上。
+        L10n.load()
+    }
+
     var body: some Scene {
         // 用 Window 而不是 WindowGroup：整个应用只允许一个窗口
         Window("SilentZIP", id: "main") {
@@ -1927,6 +1999,14 @@ struct SilentZIPApp: App {
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .help) {
+                Button(L10n.t("menu.help", "SilentZIP 帮助")) {
+                    // 不走 Help Book —— macOS 的 Help Viewer 需要一堆索引和注册，
+                    // 少一样就报「所选内容当前不可用」。直接开 HTML 最稳。
+                    AppActions.shared.openHelp?()
+                }
+                .keyboardShortcut("?", modifiers: .command)
+            }
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.t("menu.about", "关于 SilentZIP")) {
                     AboutBus.shared.open = true

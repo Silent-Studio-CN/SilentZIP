@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<title>SilentZIP Help</title><style>body{font:14px -apple-system,"Helvetica Neue",sans-serif;line-height:1.65;color:#1d1d1f;margin:0;padding:24px 32px;background:#fff}
+h1{font-size:26px;margin:0 0 6px;font-weight:600}
+h2{font-size:17px;margin:28px 0 8px;font-weight:600;border-bottom:1px solid #e5e5e7;padding-bottom:5px}
+h3{font-size:14px;margin:16px 0 4px;font-weight:600}
+p{margin:6px 0}
+code{font:12px ui-monospace,Menlo,monospace;background:#f2f2f4;padding:2px 5px;border-radius:3px}
+pre{font:12px ui-monospace,Menlo,monospace;background:#f2f2f4;padding:10px 12px;border-radius:6px;overflow-x:auto}
+table{border-collapse:collapse;margin:8px 0;font-size:13px}
+th,td{border:1px solid #e0e0e2;padding:5px 10px;text-align:left}
+th{background:#f7f7f8;font-weight:600}
+.lead{color:#6e6e73;font-size:15px;margin-bottom:20px}
+.tip{background:#f0f7ff;border-left:3px solid #0071e3;padding:8px 12px;margin:10px 0;font-size:13px}
+ul,ol{margin:6px 0;padding-left:22px}
+li{margin:3px 0}
+.kbd{display:inline-block;background:#fff;border:1px solid #c8c8cc;border-radius:4px;padding:1px 5px;font-size:11px;font-family:-apple-system}
+footer{margin-top:40px;padding-top:12px;border-top:1px solid #e5e5e7;color:#86868b;font-size:11px}</style></head><body>
+
+<h1>SilentZIP Help</h1>
+<p class="lead">An archive tool for macOS. Browse, compress, extract.</p>
+
+<h2>Getting started</h2>
+<ol>
+<li>Open an archive: drop a <code>.7z</code> <code>.zip</code> <code>.rar</code> onto the window, or press <span class="kbd">⌘O</span></li>
+<li>Look inside: local files on the left, archive contents on the right. Double-click to enter a folder</li>
+<li>Extract: select what you want, then click Extract in the toolbar</li>
+</ol>
+
+<h2>Two panes</h2>
+<table>
+<tr><th>Pane</th><th>Shows</th></tr>
+<tr><td>Left</td><td>Your disk. Navigate freely.</td></tr>
+<tr><td>Right</td><td>Inside the opened archive. Says "No archive open" until you open one.</td></tr>
+</table>
+<p>Select an archive and press <span class="kbd">Enter</span> to open it in the right pane.</p>
+
+<h2>Compressing</h2>
+<p>Select files or folders on the left, click Compress, and the parameter dialog appears:</p>
+<table>
+<tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td>Format</td><td>7z / zip / tar / wim / gz</td></tr>
+<tr><td>Level</td><td>0 Store · 1 Fastest · 3 Fast · 5 Normal · 7 Maximum · 9 Ultra</td></tr>
+<tr><td>Method</td><td>Follows the format: 7z offers LZMA2 / LZMA / PPMd / BZip2 / Deflate</td></tr>
+<tr><td>Dictionary</td><td>64KB to 1.5GB. Bigger means better ratio and more RAM.</td></tr>
+<tr><td>Word size</td><td>5 to 273. Raise it for text-heavy archives.</td></tr>
+<tr><td>Solid block</td><td>Packs files into one block: better ratio, slower random access</td></tr>
+<tr><td>CPU threads</td><td>Auto uses every core</td></tr>
+<tr><td>Volume size</td><td>Enter <code>100m</code> or <code>1g</code> to split. Leave empty for one file.</td></tr>
+<tr><td>Update mode</td><td>Add and replace / Add and update / Update and add / Synchronize / Add only</td></tr>
+<tr><td>Path mode</td><td>Relative / Absolute / Full</td></tr>
+<tr><td>Password</td><td>7z supports AES-256, and can encrypt file names too</td></tr>
+</table>
+<div class="tip">The memory line updates live: "36 GB RAM · needs 3072 MB". It turns orange when the estimate exceeds your RAM.</div>
+
+<h2>Progress, pause, background</h2>
+<p>For big jobs a progress bar appears at the bottom of the window with three buttons:</p>
+<ul>
+<li><strong>Pause</strong> — freezes the process, uses no CPU. Resume continues where it stopped.</li>
+<li><strong>Background</strong> — the system treats it as a background task. The UI stays smooth, it runs slower.</li>
+<li><strong>Cancel</strong> — stops it. Whatever was already written is incomplete.</li>
+</ul>
+<p>For 2GB+ archives while you keep working, turn on Background.</p>
+
+<h2>Extracting</h2>
+<ul>
+<li>Select entries, click Extract → only the selection is extracted</li>
+<li>Right-click → Extract All → everything comes out</li>
+<li>Drag to Finder → drops the entry where you let go</li>
+</ul>
+
+<h2>Command line</h2>
+<pre>sz list    &lt;archive&gt;              list contents   (l)
+sz extract &lt;archive&gt; [dir]        extract         (x)
+sz create  &lt;archive&gt; &lt;files...&gt;   create archive  (a)
+sz test    &lt;archive&gt;              verify          (t)
+sz info    &lt;archive&gt;              archive info    (i)
+sz version                        version         (v)</pre>
+<p>Install it first: menu Tools → Install Command Line Tool… It symlinks to <code>/usr/local/bin/sz</code>.</p>
+<div class="tip">The command is <code>sz</code>, not <code>silentzip</code>: macOS filesystems are case-insensitive, so <code>SilentZIP</code> and <code>silentzip</code> are the same file — the full name would overwrite the main binary.</div>
+
+<h2>Supported formats</h2>
+<p>The engine handles 60+. Common ones:</p>
+<p><code>7z</code> <code>zip</code> <code>rar</code> <code>tar</code> <code>gz</code> <code>bz2</code> <code>xz</code> <code>zst</code> <code>lzh</code> <code>cab</code> <code>iso</code> <code>arj</code> <code>cpio</code> <code>dmg</code> <code>jar</code> <code>apk</code></p>
+
+<h2>Troubleshooting</h2>
+
+<h3>Double-clicking an archive does nothing</h3>
+<p>Menu Tools → Set as Default Archive Tool to re-register.</p>
+
+<h3>It says the password is wrong</h3>
+<p>If the archive also encrypts file names, a wrong password makes it unopenable rather than prompting.</p>
+
+<h3>zsh can't find sz</h3>
+<pre>sudo ln -sf /Applications/SilentZIP.app/Contents/MacOS/sz /usr/local/bin/sz</pre>
+
+<h3>Switching language didn't change the UI</h3>
+<p>It restarts once. Language files are read into memory at launch; an already-drawn interface won't repaint itself.</p>
+
+<h3>Uninstalling completely</h3>
+<pre>rm -rf /Applications/SilentZIP.app
+sudo rm -f /usr/local/bin/sz
+defaults delete cn.silentstudio.silentzip
+rm -rf ~/Library/Application\ Support/SilentZIP</pre>
+
+<footer>SilentZIP · Copyright (C) SilentStudio / SilentCodeTeams™<br>
+Archive engine based on 7-Zip 26.05, invoked as a separate process, not statically linked.</footer>
+</body></html>
