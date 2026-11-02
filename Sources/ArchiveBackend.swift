@@ -147,6 +147,51 @@ final class ArchiveBackend: @unchecked Sendable {
     }
 
     /// 创建归档
+    /// 所有条目的最深公共父目录
+    static func commonParent(_ items: [URL]) -> URL? {
+        let dirs = items.map { $0.deletingLastPathComponent().path }
+        guard let first = dirs.first else { return nil }
+        var parts = first.split(separator: "/").map(String.init)
+        for d in dirs.dropFirst() {
+            let other = d.split(separator: "/").map(String.init)
+            var keep: [String] = []
+            for (a, b) in zip(parts, other) where a == b { keep.append(a) }
+            parts = keep
+        }
+        return URL(fileURLWithPath: "/" + parts.joined(separator: "/"))
+    }
+
+    /// 带进度的压缩。返回的任务可以暂停/取消/降级。
+    func createTask(_ archive: URL, from items: [URL], format: String = "7z",
+                    extra: [String] = []) throws -> ProgressTask {
+        guard let tool = toolPath else { throw ArchiveError.toolMissing }
+        guard let root = Self.commonParent(items) else {
+            throw ArchiveError.failed(L10n.t("err.noCommon", "这些文件不在同一个目录下"))
+        }
+        let relatives = items.map { u -> String in
+            var p = u.path
+            if root.path != "/", p.hasPrefix(root.path + "/") {
+                p = String(p.dropFirst(root.path.count + 1))
+            } else if root.path == "/" {
+                p = String(p.dropFirst())
+            }
+            return p
+        }
+        var args = ["a", "-bsp1", "-y", "-t" + format]
+        args.append(contentsOf: extra)
+        args.append(archive.path)
+        args.append(contentsOf: relatives)
+        return ProgressTask(tool: tool, args: args, cwd: root)
+    }
+
+    /// 带进度的解压
+    func extractTask(_ archive: URL, to dir: URL, subset: [String] = []) throws -> ProgressTask {
+        guard let tool = toolPath else { throw ArchiveError.toolMissing }
+        var args = ["x", "-bsp1", "-y", "-o" + dir.path, archive.path]
+        if !subset.isEmpty { args.append(contentsOf: subset) }
+        return ProgressTask(tool: tool, args: args, cwd: nil)
+    }
+
     func create(_ archive: URL, from items: [URL], format: String = "7z",
                 extra: [String] = []) throws {
         guard let tool = toolPath else { throw ArchiveError.toolMissing }

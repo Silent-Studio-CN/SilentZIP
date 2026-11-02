@@ -681,35 +681,24 @@ final class ZipModel: ObservableObject {
     /// 当前选用的压缩预设
     @Published var preset: CompressPreset = PresetStore.all.first ?? CompressPreset(name: L10n.t("preset.standard", "标准 7z"))
 
-    /// 用完整参数压缩
+    /// 用完整参数压缩（带进度、可暂停/取消/降级）
     func createArchive(from items: [URL], to target: URL, options: CompressOptions) {
         guard !items.isEmpty else { return }
-        busy = true
-        status = L10n.t("status.compressing", "压缩中…")
-
-        let extra = options.arguments()
-        Task.detached(priority: .userInitiated) {
-            do {
-                try ArchiveBackend.shared.create(target, from: items,
-                                                  format: options.format, extra: extra)
-                let list = try ArchiveBackend.shared.list(target)
-                await MainActor.run {
+        do {
+            let task = try ArchiveBackend.shared.createTask(
+                target, from: items, format: options.format, extra: options.arguments())
+            attach(task, verb: L10n.t("status.compressing", "压缩中…")) { ok in
+                guard ok else { return }
+                if let list = try? ArchiveBackend.shared.list(target) {
                     self.archive = target
                     self.entries = list
-                    self.currentPath = ""
-                    self.selection = []
                     self.status = L10n.f("status.created", "已创建 %@（%d 个条目）",
                                          target.lastPathComponent, list.count)
-                    self.busy = false
-                    self.loadFS(self.fsPath)
                 }
-            } catch {
-                await MainActor.run {
-                    self.status = L10n.f("error.compressFailed", "压缩失败：%@",
-                                         error.localizedDescription)
-                    self.busy = false
-                }
+                self.loadFS(self.fsPath)
             }
+        } catch {
+            status = L10n.f("error.compressFailed", "压缩失败：%@", error.localizedDescription)
         }
     }
 
@@ -763,6 +752,77 @@ final class ZipModel: ObservableObject {
     @Published var currentPath: String = ""
     @Published var selection: Set<UUID> = []
     @Published var status: String = ""
+
+    // 长任务的状态：进度条要用的
+    @Published var taskRunning = false
+    @Published var taskPaused = false
+    @Published var taskBackground = false
+    @Published var taskPercent: Int = 0
+    @Published var taskFile: String = ""
+    @Published var taskVerb: String = ""
+    private var currentTask: ProgressTask?
+
+
+    // MARK: - 长任务控制
+
+    /// 挂上一个任务，接管它的进度回调
+    func attach(_ task: ProgressTask, verb: String,
+                completion: ((Bool) -> Void)? = nil) {
+        currentTask = task
+        taskVerb = verb
+        taskRunning = true
+        taskPaused = false
+        taskBackground = false
+        taskPercent = 0
+        taskFile = ""
+
+        task.onProgress = { [weak self] pct, file in
+            self?.taskPercent = pct
+            if !file.isEmpty { self?.taskFile = file }
+        }
+        task.onFinish = { [weak self] ok, tail in
+            guard let self else { return }
+            self.taskRunning = false
+            self.taskPaused = false
+            self.taskBackground = false
+            self.taskPercent = 0
+            self.taskFile = ""
+            self.currentTask = nil
+            if !ok {
+                self.status = L10n.t("task.failed", "任务被中断或失败")
+            }
+            completion?(ok)
+            _ = tail
+        }
+        do {
+            try task.start()
+        } catch {
+            taskRunning = false
+            status = L10n.f("error.generic2", "启动失败：%@", error.localizedDescription)
+        }
+    }
+
+    func pauseTask() {
+        guard let t = currentTask else { return }
+        t.pause()
+        taskPaused = true
+    }
+
+    func resumeTask() {
+        guard let t = currentTask else { return }
+        t.resume()
+        taskPaused = false
+    }
+
+    func cancelTask() {
+        currentTask?.cancel()
+    }
+
+    /// 后台模式：开了之后系统会把它当后台任务，前台不卡
+    func setTaskBackground(_ on: Bool) {
+        taskBackground = on
+        currentTask?.setBackground(on)
+    }
 
     /// 初始 status 是在 L10n 加载前求值的，界面起来后补一次
     func refreshStatusIfIdle() {
@@ -1173,6 +1233,7 @@ struct ContentView: View {
                 }
             }
             Divider()
+            if model.taskRunning { progressBar }
             statusBar
         }
         .frame(minWidth: 1000, idealWidth: 1180, minHeight: 600)
@@ -1779,6 +1840,61 @@ struct ContentView: View {
                 )
         }
         .frame(width: 1)
+    }
+
+    /// 长任务的进度条：压缩/解压大文件时才会出现
+    private var progressBar: some View {
+        HStack(spacing: 10) {
+            Text(model.taskVerb).font(.caption).frame(minWidth: 56, alignment: .leading)
+
+            ProgressView(value: Double(model.taskPercent), total: 100)
+                .progressViewStyle(.linear)
+                .frame(width: 200)
+
+            Text("\(model.taskPercent)%")
+                .font(.caption2)
+                .monospacedDigit()
+                .frame(width: 38, alignment: .trailing)
+
+            Text(model.taskFile)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer()
+
+            Button {
+                model.taskPaused ? model.resumeTask() : model.pauseTask()
+            } label: {
+                Label(model.taskPaused
+                        ? L10n.t("task.resume", "继续")
+                        : L10n.t("task.pause", "暂停"),
+                      systemImage: model.taskPaused ? "play.fill" : "pause.fill")
+            }
+            .buttonStyle(.borderless)
+            .help(L10n.t("task.pauseHint", "暂停时不占 CPU，点继续接着跑"))
+
+            Button {
+                model.setTaskBackground(!model.taskBackground)
+            } label: {
+                Label(L10n.t("task.background", "后台"),
+                      systemImage: model.taskBackground ? "moon.fill" : "moon")
+            }
+            .buttonStyle(.borderless)
+            .help(L10n.t("task.bgHint",
+                         "开启后系统把它当后台任务：前台不卡，速度慢一些"))
+
+            Button {
+                model.cancelTask()
+            } label: {
+                Label(L10n.t("task.cancel", "取消"), systemImage: "xmark.circle")
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(model.taskPaused ? Color.orange.opacity(0.12) : Color.clear)
     }
 
     private var statusBar: some View {
